@@ -2,16 +2,15 @@
 
 <html>
 <head>
-<title>AI Forensic DD</title>
+<title>Enterprise AI Forensic DD</title>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
 <style>
-
 body{
 font-family:Segoe UI,Arial;
-background:#eef2f6;
-max-width:950px;
+background:#edf2f7;
+max-width:1000px;
 margin:auto;
 padding:40px;
 }
@@ -25,7 +24,7 @@ width:100%;
 height:110px;
 padding:12px;
 border-radius:6px;
-border:1px solid #ccc;
+border:1px solid #cbd5e1;
 }
 
 button{
@@ -41,16 +40,16 @@ cursor:pointer;
 
 .report{
 background:white;
-padding:30px;
+padding:35px;
 margin-top:25px;
 border-radius:10px;
-box-shadow:0 4px 14px rgba(0,0,0,0.08);
+box-shadow:0 5px 18px rgba(0,0,0,0.08);
 }
 
 .header{
 border-bottom:4px solid #1E3A5F;
+padding-bottom:15px;
 margin-bottom:20px;
-padding-bottom:12px;
 }
 
 .meta{
@@ -58,48 +57,54 @@ font-size:14px;
 color:#555;
 }
 
-.section{
-margin-top:22px;
+.summaryBox{
 padding:18px;
-background:#f9fafb;
-border-left:6px solid #cbd5e1;
-border-radius:6px;
-}
-
-.section h3{
-margin-top:0;
-color:#1E3A5F;
-}
-
-.risk{
-padding:15px;
+margin-top:20px;
 font-weight:bold;
 border-left:6px solid;
-margin-top:20px;
 border-radius:6px;
 }
 
-.green{
-background:#ecfdf5;
-border-color:#059669;
-color:#065f46;
+.low{background:#ecfdf5;border-color:#059669;color:#065f46;}
+.medium{background:#fffbeb;border-color:#D97706;color:#92400e;}
+.high{background:#fef2f2;border-color:#DC2626;color:#991b1b;}
+
+.section{
+margin-top:20px;
+border:1px solid #e2e8f0;
+border-radius:6px;
+overflow:hidden;
 }
 
-.yellow{
-background:#fffbeb;
-border-color:#D97706;
-color:#92400e;
+.sectionHeader{
+background:#f8fafc;
+padding:14px;
+cursor:pointer;
+font-weight:bold;
+display:flex;
+justify-content:space-between;
 }
 
-.red{
-background:#fef2f2;
-border-color:#DC2626;
-color:#991b1b;
+.sectionContent{
+padding:16px;
+display:none;
+background:white;
 }
+
+.flagTag{
+padding:3px 8px;
+border-radius:4px;
+font-size:12px;
+font-weight:bold;
+}
+
+.flagGreen{background:#d1fae5;color:#065f46;}
+.flagYellow{background:#fef3c7;color:#92400e;}
+.flagRed{background:#fee2e2;color:#991b1b;}
 
 .footer{
 margin-top:35px;
-padding-top:10px;
+padding-top:12px;
 border-top:1px solid #ddd;
 font-size:13px;
 color:#666;
@@ -110,14 +115,13 @@ pre{
 white-space:pre-wrap;
 margin:0;
 }
-
 </style>
 
 </head>
 
 <body>
 
-<h2>🔬 AI Forensic Due Diligence Tool</h2>
+<h2>🔬 Enterprise AI Forensic Due Diligence Console</h2>
 
 <textarea id="input"
 placeholder="Enter Company Name and Country"></textarea>
@@ -129,26 +133,30 @@ placeholder="Enter Company Name and Country"></textarea>
 <div id="report" class="report" style="display:none">
 
 <div class="header">
-<h2>AI Forensic Due Diligence Report</h2>
+<h2>Forensic Due Diligence Report</h2>
 <div class="meta" id="meta"></div>
 </div>
 
-<div id="riskBox"></div>
+<div id="executiveSummary"></div>
 
 <div id="sections"></div>
 
 <div class="footer">
-Created by Govind • AI Forensic DD Platform
+Created by Govind • Enterprise AI Compliance Platform
 </div>
 
 </div>
 
 <script>
 
+function generateCaseID(){
+return "DD-"+new Date().getFullYear()+"-"+Math.floor(100000+Math.random()*900000);
+}
+
 async function run(){
 
 document.getElementById("report").style.display="block";
-document.getElementById("sections").innerHTML="Running investigation...";
+document.getElementById("sections").innerHTML="Running enterprise screening...";
 
 const company=document.getElementById("input").value;
 
@@ -158,66 +166,96 @@ headers:{"Content-Type":"application/json"},
 body:JSON.stringify({
 prompt:
 "Create a structured forensic due diligence report for "+company+
-" using sections: Company Overview, Ownership & Management, Address Verification, Media & Reputation, Legal & Regulatory Issues, Sanctions Screening, Risk Conclusion. End with FLAG: GREEN or FLAG: YELLOW or FLAG: RED."
+" using sections clearly labeled: Company Overview, Ownership & Management, Address Verification, Media & Reputation, Legal & Regulatory Issues, Sanctions Screening, Risk Conclusion. Provide clear analysis in each section. End with FLAG: GREEN or FLAG: YELLOW or FLAG: RED."
 })
 });
 
 const data=await res.json();
 const text=data.result || "";
 
-buildReport(company,text);
+buildEnterpriseReport(company,text);
 }
 
-function buildReport(company,text){
+function buildEnterpriseReport(company,text){
 
+const caseID=generateCaseID();
 const today=new Date().toLocaleDateString();
 
 document.getElementById("meta").innerHTML=
-"<b>Company:</b> "+company+
+"<b>Case ID:</b> "+caseID+
+"<br><b>Company:</b> "+company+
 "<br><b>Date:</b> "+today+
 "<br><b>Screening Type:</b> AI Public Source Due Diligence";
 
-let flag="GREEN";
-let riskClass="green";
-let label="LOW RISK";
+let overall="LOW";
+let summaryClass="low";
 
 if(text.includes("FLAG: RED")){
-flag="RED";
-riskClass="red";
-label="HIGH RISK";
+overall="HIGH";
+summaryClass="high";
 }
 else if(text.includes("FLAG: YELLOW")){
-flag="YELLOW";
-riskClass="yellow";
-label="MEDIUM RISK";
+overall="MEDIUM";
+summaryClass="medium";
 }
 
-document.getElementById("riskBox").innerHTML=
-'<div class="risk '+riskClass+'">'+
-'Overall Risk Assessment: '+label+' ('+flag+')'+
+document.getElementById("executiveSummary").innerHTML=
+'<div class="summaryBox '+summaryClass+'">'+
+'Executive Risk Assessment: '+overall+' RISK'+
 '</div>';
 
-const parts=text.split(/\n(?=[A-Z])/);
+const sectionTitles=[
+"Company Overview",
+"Ownership & Management",
+"Address Verification",
+"Media & Reputation",
+"Legal & Regulatory Issues",
+"Sanctions Screening",
+"Risk Conclusion"
+];
 
 let html="";
 
-parts.forEach(p=>{
-if(p.trim().length>40){
-html+=
-'<div class="section"><pre>'+p+'</pre></div>';
+sectionTitles.forEach(title=>{
 
+let content="Section data not clearly identified.";
+
+if(text.includes(title)){
+const part=text.split(title)[1];
+if(part) content=part.split(/(?=[A-Z][a-z])/)[0];
 }
+
+let flag="flagGreen";
+if(content.toLowerCase().includes("concern")||content.toLowerCase().includes("risk"))
+flag="flagYellow";
+if(content.toLowerCase().includes("violation")||content.toLowerCase().includes("sanction"))
+flag="flagRed";
+
+html+=
+'<div class="section">'+
+'<div class="sectionHeader" onclick="toggleSection(this)">'+
+title+
+'<span class="flagTag '+flag+'">'+flag.replace("flag","").toUpperCase()+'</span>'+
+'</div>'+
+'<div class="sectionContent"><pre>'+content+'</pre></div>'+
+
+'</div>';
 });
 
 document.getElementById("sections").innerHTML=html;
 }
 
+function toggleSection(el){
+const content=el.nextElementSibling;
+content.style.display=
+content.style.display==="block"?"none":"block";
+}
+
 function downloadPDF(){
 const element=document.getElementById("report");
-
 html2pdf().set({
 margin:0.5,
-filename:'AI_Forensic_DD_Report.pdf',
+filename:'Enterprise_DD_Report.pdf',
 html2canvas:{scale:2},
 jsPDF:{unit:'in',format:'a4',orientation:'portrait'}
 }).from(element).save();
