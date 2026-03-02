@@ -1,7 +1,0 @@
-{
-  "functions": {
-    "api/forensic.js": {
-      "runtime": "@vercel/node"
-    }
-  }
-}
