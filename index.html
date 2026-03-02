@@ -1,5 +1,4 @@
 <!DOCTYPE html>
-
 <html>
 <head>
 <title>AI Forensic DD</title>
@@ -7,8 +6,9 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
 <style>
+
 body{
-font-family:'Inter', Segoe UI, Arial;
+font-family: 'Inter', Segoe UI, Arial;
 background:#f1f5f9;
 max-width:1100px;
 margin:auto;
@@ -83,12 +83,6 @@ color:#475569;
 margin-top:10px;
 }
 
-.caseID{
-font-weight:600;
-color:#1E3A5F;
-margin-top:5px;
-}
-
 .risk{
 padding:18px;
 margin-top:20px;
@@ -116,7 +110,7 @@ color:#991b1b;
 }
 
 .section{
-margin-top:22px;
+margin-top:20px;
 padding:20px;
 background:#f8fafc;
 border-radius:10px;
@@ -127,7 +121,6 @@ border:1px solid #e2e8f0;
 margin-top:0;
 color:#1E3A5F;
 margin-bottom:10px;
-font-size:16px;
 }
 
 .footer{
@@ -144,8 +137,8 @@ white-space:pre-wrap;
 margin:0;
 font-family:inherit;
 }
-</style>
 
+</style>
 </head>
 
 <body>
@@ -163,7 +156,8 @@ font-family:inherit;
 
 <br>
 
-<button onclick="run()">Run Investigation</button> <button onclick="downloadPDF()">📄 Download PDF</button>
+<button onclick="run()">Run Investigation</button>
+<button onclick="downloadPDF()">📄 Download PDF</button>
 
 </div>
 
@@ -172,7 +166,6 @@ font-family:inherit;
 <div class="header">
 <h2>Forensic Due Diligence Report</h2>
 <div class="meta" id="meta"></div>
-<div class="caseID" id="caseID"></div>
 </div>
 
 <div id="riskBox"></div>
@@ -186,10 +179,6 @@ Created by Govind • Enterprise AI Compliance Platform
 </div>
 
 <script>
-
-function generateCaseID(){
-return "DD-"+new Date().getFullYear()+"-"+Math.floor(100000+Math.random()*900000);
-}
 
 async function run(){
 
@@ -208,7 +197,7 @@ prompt:
 "Create a structured forensic due diligence report for "+name+
 ". Registered Address: "+address+
 ". Details: "+details+
-". Use clearly labeled sections: Company Overview, Ownership & Management, Address Verification, Media & Reputation, Legal & Regulatory Issues, Sanctions Screening, Risk Conclusion. End clearly with FLAG: GREEN or FLAG: YELLOW or FLAG: RED."
+". Use sections: Company Overview, Ownership & Management, Address Verification, Media & Reputation, Legal & Regulatory Issues, Sanctions Screening, Risk Conclusion. End with FLAG: GREEN or FLAG: YELLOW or FLAG: RED."
 })
 });
 
@@ -221,7 +210,6 @@ buildReport(name,address,text);
 function buildReport(name,address,text){
 
 const today=new Date().toLocaleDateString();
-const caseID=generateCaseID();
 
 document.getElementById("meta").innerHTML=
 "<b>Partner:</b> "+name+
@@ -229,55 +217,34 @@ document.getElementById("meta").innerHTML=
 "<br><b>Date:</b> "+today+
 "<br><b>Screening Type:</b> AI Public Source Due Diligence";
 
-document.getElementById("caseID").innerText="Case ID: "+caseID;
-
+let flag="GREEN";
 let riskClass="green";
 let label="LOW RISK";
 
 if(text.includes("FLAG: RED")){
+flag="RED";
 riskClass="red";
 label="HIGH RISK";
 }
 else if(text.includes("FLAG: YELLOW")){
+flag="YELLOW";
 riskClass="yellow";
 label="MEDIUM RISK";
 }
 
 document.getElementById("riskBox").innerHTML=
 '<div class="risk '+riskClass+'">'+
-'Executive Risk Assessment: '+label+
+'Overall Risk Assessment: '+label+' ('+flag+')'+
 '</div>';
 
-const sectionTitles=[
-"Company Overview",
-"Ownership & Management",
-"Address Verification",
-"Media & Reputation",
-"Legal & Regulatory Issues",
-"Sanctions Screening",
-"Risk Conclusion"
-];
+const parts=text.split(/\n(?=[A-Z])/);
 
 let html="";
 
-sectionTitles.forEach(title=>{
-
-let content="Information not clearly provided.";
-
-const regex=new RegExp(title+"([\\s\\S]*?)(?="+sectionTitles.join("|")+"|FLAG:|$)","i");
-const match=text.match(regex);
-
-if(match && match[1]){
-content=match[1].trim();
+parts.forEach(p=>{
+if(p.trim().length>40){
+html+='<div class="section"><pre>'+p+'</pre></div>';
 }
-
-html+=
-'<div class="section">'+
-'<h3>'+title+'</h3>'+
-'<pre>'+content+'</pre>'+
-
-'</div>';
-
 });
 
 document.getElementById("sections").innerHTML=html;
@@ -285,9 +252,10 @@ document.getElementById("sections").innerHTML=html;
 
 function downloadPDF(){
 const element=document.getElementById("report");
+
 html2pdf().set({
 margin:0.5,
-filename:'Enterprise_Forensic_DD_Report.pdf',
+filename:'AI_Forensic_DD_Report.pdf',
 html2canvas:{scale:2},
 jsPDF:{unit:'in',format:'a4',orientation:'portrait'}
 }).from(element).save();
