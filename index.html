@@ -1,33 +1,84 @@
 <!DOCTYPE html>
+
 <html>
 <head>
-  <title>AI Forensic DD</title>
-  <style>
-    body{
-      font-family: Arial;
-      max-width:700px;
-      margin:auto;
-      padding:40px;
-    }
-    textarea{
-      width:100%;
-      height:120px;
-      padding:10px;
-    }
-    button{
-      padding:12px;
-      margin-top:10px;
-      background:#1E3A5F;
-      color:white;
-      border:none;
-      cursor:pointer;
-    }
-    pre{
-      background:#f4f4f4;
-      padding:15px;
-      white-space:pre-wrap;
-    }
-  </style>
+<title>AI Forensic DD</title>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+<style>
+body{
+font-family:Arial;
+max-width:800px;
+margin:auto;
+padding:40px;
+background:#f4f6f8;
+}
+
+textarea{
+width:100%;
+height:120px;
+padding:10px;
+}
+
+button{
+padding:12px;
+margin-top:10px;
+margin-right:10px;
+background:#1E3A5F;
+color:white;
+border:none;
+cursor:pointer;
+border-radius:6px;
+}
+
+.report{
+background:white;
+padding:25px;
+margin-top:25px;
+border-radius:8px;
+box-shadow:0 2px 10px rgba(0,0,0,0.08);
+}
+
+.header{
+border-bottom:3px solid #1E3A5F;
+margin-bottom:20px;
+padding-bottom:10px;
+}
+
+.risk{
+padding:15px;
+margin:15px 0;
+font-weight:bold;
+border-left:6px solid;
+border-radius:4px;
+}
+
+.green{
+background:#ecfdf5;
+border-color:#059669;
+color:#065f46;
+}
+
+.yellow{
+background:#fffbeb;
+border-color:#D97706;
+color:#92400e;
+}
+
+.red{
+background:#fef2f2;
+border-color:#DC2626;
+color:#991b1b;
+}
+
+pre{
+background:#f8fafc;
+padding:15px;
+white-space:pre-wrap;
+}
+</style>
+
 </head>
 
 <body>
@@ -37,34 +88,97 @@
 <textarea id="input"
 placeholder="Enter company name and country"></textarea>
 
-<button onclick="run()">Run Investigation</button>
+<br>
 
-<h3>Result</h3>
+<button onclick="run()">Run Investigation</button> <button onclick="downloadPDF()">📄 Download PDF</button>
+
+<div id="report" class="report" style="display:none">
+
+<div class="header">
+<h2>AI Forensic Due Diligence Report</h2>
+<div id="meta"></div>
+</div>
+
+<div id="riskBox"></div>
+
+<h3>Investigative Findings</h3>
 <pre id="output"></pre>
 
+</div>
+
 <script>
+
 async function run(){
-  document.getElementById("output").innerText="Searching...";
 
-  const text =
-    document.getElementById("input").value;
+document.getElementById("report").style.display="block";
+document.getElementById("output").innerText="Searching...";
 
-  const res = await fetch("/api/forensic",{
-    method:"POST",
-    headers:{
-      "Content-Type":"application/json"
-    },
-    body:JSON.stringify({
-      prompt:
-      "Conduct due diligence investigation on "+text
-    })
-  });
+const text =
+document.getElementById("input").value;
 
-  const data = await res.json();
+const res = await fetch("/api/forensic",{
+method:"POST",
+headers:{
+"Content-Type":"application/json"
+},
+body:JSON.stringify({
+prompt:
+"Conduct forensic due diligence investigation including company registration verification, ownership review, adverse media search, sanctions screening and legal risks for "+text+
+". End clearly with FLAG: GREEN or FLAG: YELLOW or FLAG: RED."
+})
+});
 
-  document.getElementById("output")
-    .innerText=data.result;
+const data = await res.json();
+
+const result=data.result || "";
+
+detectRisk(result,text);
 }
+
+function detectRisk(result,company){
+
+let flag="GREEN";
+let riskClass="green";
+let label="LOW RISK";
+
+if(result.includes("FLAG: RED")){
+flag="RED";
+riskClass="red";
+label="HIGH RISK";
+}
+else if(result.includes("FLAG: YELLOW")){
+flag="YELLOW";
+riskClass="yellow";
+label="MEDIUM RISK";
+}
+
+const today=new Date().toLocaleDateString();
+
+document.getElementById("meta").innerHTML=
+"<b>Company:</b> "+company+
+"<br><b>Date:</b> "+today+
+"<br><b>Screening:</b> AI Public Source Due Diligence";
+
+document.getElementById("riskBox").innerHTML=
+'<div class="risk '+riskClass+'">'+
+'Risk Assessment: '+label+' ('+flag+')'+
+'</div>';
+
+document.getElementById("output").innerText=result;
+}
+
+function downloadPDF(){
+
+const element=document.getElementById("report");
+
+html2pdf().set({
+margin:0.5,
+filename:'AI_Forensic_DD_Report.pdf',
+html2canvas:{scale:2},
+jsPDF:{unit:'in',format:'a4',orientation:'portrait'}
+}).from(element).save();
+}
+
 </script>
 
 </body>
