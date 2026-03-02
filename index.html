@@ -1,5 +1,4 @@
 <!DOCTYPE html>
-
 <html>
 <head>
 <title>AI Forensic DD</title>
@@ -9,74 +8,87 @@
 <style>
 
 body{
-font-family:Segoe UI,Arial;
-background:#eef2f6;
-max-width:950px;
+font-family: 'Inter', Segoe UI, Arial;
+background:#f1f5f9;
+max-width:1100px;
 margin:auto;
 padding:40px;
 }
 
 h2{
-color:#1E3A5F;
+color:#0f172a;
+margin-bottom:20px;
+}
+
+.formCard{
+background:white;
+padding:25px;
+border-radius:12px;
+box-shadow:0 8px 24px rgba(0,0,0,0.06);
+margin-bottom:25px;
+}
+
+.inputRow{
+display:flex;
+gap:15px;
+margin-bottom:15px;
+}
+
+input, textarea{
+flex:1;
+padding:12px;
+border-radius:8px;
+border:1px solid #cbd5e1;
+font-size:14px;
 }
 
 textarea{
-width:100%;
-height:110px;
-padding:12px;
-border-radius:6px;
-border:1px solid #ccc;
+height:90px;
+resize:none;
 }
 
 button{
-padding:12px 18px;
-margin-top:12px;
+padding:12px 20px;
+margin-top:10px;
 margin-right:10px;
 background:#1E3A5F;
 color:white;
 border:none;
-border-radius:6px;
+border-radius:8px;
 cursor:pointer;
+font-weight:600;
+}
+
+button:hover{
+opacity:0.9;
 }
 
 .report{
 background:white;
-padding:30px;
-margin-top:25px;
-border-radius:10px;
-box-shadow:0 4px 14px rgba(0,0,0,0.08);
+padding:35px;
+margin-top:20px;
+border-radius:14px;
+box-shadow:0 10px 28px rgba(0,0,0,0.07);
 }
 
 .header{
-border-bottom:4px solid #1E3A5F;
-margin-bottom:20px;
-padding-bottom:12px;
+border-bottom:3px solid #1E3A5F;
+margin-bottom:25px;
+padding-bottom:15px;
 }
 
 .meta{
 font-size:14px;
-color:#555;
-}
-
-.section{
-margin-top:22px;
-padding:18px;
-background:#f9fafb;
-border-left:6px solid #cbd5e1;
-border-radius:6px;
-}
-
-.section h3{
-margin-top:0;
-color:#1E3A5F;
+color:#475569;
+margin-top:10px;
 }
 
 .risk{
-padding:15px;
-font-weight:bold;
-border-left:6px solid;
+padding:18px;
 margin-top:20px;
-border-radius:6px;
+font-weight:600;
+border-left:6px solid;
+border-radius:8px;
 }
 
 .green{
@@ -97,39 +109,62 @@ border-color:#DC2626;
 color:#991b1b;
 }
 
+.section{
+margin-top:20px;
+padding:20px;
+background:#f8fafc;
+border-radius:10px;
+border:1px solid #e2e8f0;
+}
+
+.section h3{
+margin-top:0;
+color:#1E3A5F;
+margin-bottom:10px;
+}
+
 .footer{
 margin-top:35px;
-padding-top:10px;
-border-top:1px solid #ddd;
+padding-top:12px;
+border-top:1px solid #e2e8f0;
 font-size:13px;
-color:#666;
+color:#64748b;
 text-align:center;
 }
 
 pre{
 white-space:pre-wrap;
 margin:0;
+font-family:inherit;
 }
 
 </style>
-
 </head>
 
 <body>
 
-<h2>🔬 AI Forensic Due Diligence Tool</h2>
+<h2>🔬 Enterprise AI Forensic Due Diligence</h2>
 
-<textarea id="input"
-placeholder="Enter Company Name and Country"></textarea>
+<div class="formCard">
+
+<div class="inputRow">
+<input type="text" id="partnerName" placeholder="Partner / Company Name">
+<input type="text" id="partnerAddress" placeholder="Registered Address">
+</div>
+
+<textarea id="input" placeholder="Country / Additional Details"></textarea>
 
 <br>
 
-<button onclick="run()">Run Investigation</button> <button onclick="downloadPDF()">📄 Download PDF</button>
+<button onclick="run()">Run Investigation</button>
+<button onclick="downloadPDF()">📄 Download PDF</button>
+
+</div>
 
 <div id="report" class="report" style="display:none">
 
 <div class="header">
-<h2>AI Forensic Due Diligence Report</h2>
+<h2>Forensic Due Diligence Report</h2>
 <div class="meta" id="meta"></div>
 </div>
 
@@ -138,7 +173,7 @@ placeholder="Enter Company Name and Country"></textarea>
 <div id="sections"></div>
 
 <div class="footer">
-Created by Govind • AI Forensic DD Platform
+Created by Govind • Enterprise AI Compliance Platform
 </div>
 
 </div>
@@ -150,30 +185,35 @@ async function run(){
 document.getElementById("report").style.display="block";
 document.getElementById("sections").innerHTML="Running investigation...";
 
-const company=document.getElementById("input").value;
+const name=document.getElementById("partnerName").value;
+const address=document.getElementById("partnerAddress").value;
+const details=document.getElementById("input").value;
 
 const res=await fetch("/api/forensic",{
 method:"POST",
 headers:{"Content-Type":"application/json"},
 body:JSON.stringify({
 prompt:
-"Create a structured forensic due diligence report for "+company+
-" using sections: Company Overview, Ownership & Management, Address Verification, Media & Reputation, Legal & Regulatory Issues, Sanctions Screening, Risk Conclusion. End with FLAG: GREEN or FLAG: YELLOW or FLAG: RED."
+"Create a structured forensic due diligence report for "+name+
+". Registered Address: "+address+
+". Details: "+details+
+". Use sections: Company Overview, Ownership & Management, Address Verification, Media & Reputation, Legal & Regulatory Issues, Sanctions Screening, Risk Conclusion. End with FLAG: GREEN or FLAG: YELLOW or FLAG: RED."
 })
 });
 
 const data=await res.json();
 const text=data.result || "";
 
-buildReport(company,text);
+buildReport(name,address,text);
 }
 
-function buildReport(company,text){
+function buildReport(name,address,text){
 
 const today=new Date().toLocaleDateString();
 
 document.getElementById("meta").innerHTML=
-"<b>Company:</b> "+company+
+"<b>Partner:</b> "+name+
+"<br><b>Address:</b> "+address+
 "<br><b>Date:</b> "+today+
 "<br><b>Screening Type:</b> AI Public Source Due Diligence";
 
@@ -203,9 +243,7 @@ let html="";
 
 parts.forEach(p=>{
 if(p.trim().length>40){
-html+=
-'<div class="section"><pre>'+p+'</pre></div>';
-
+html+='<div class="section"><pre>'+p+'</pre></div>';
 }
 });
 
