@@ -2,7 +2,7 @@
 
 <html>
 <head>
-<title>Enterprise AI Forensic DD</title>
+<title>AI Forensic DD</title>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
@@ -10,7 +10,7 @@
 body{
 font-family:Segoe UI,Arial;
 background:#edf2f7;
-max-width:1000px;
+max-width:950px;
 margin:auto;
 padding:40px;
 }
@@ -57,7 +57,7 @@ font-size:14px;
 color:#555;
 }
 
-.summaryBox{
+.risk{
 padding:18px;
 margin-top:20px;
 font-weight:bold;
@@ -65,42 +65,31 @@ border-left:6px solid;
 border-radius:6px;
 }
 
-.low{background:#ecfdf5;border-color:#059669;color:#065f46;}
-.medium{background:#fffbeb;border-color:#D97706;color:#92400e;}
-.high{background:#fef2f2;border-color:#DC2626;color:#991b1b;}
+.low{
+background:#ecfdf5;
+border-color:#059669;
+color:#065f46;
+}
+
+.medium{
+background:#fffbeb;
+border-color:#D97706;
+color:#92400e;
+}
+
+.high{
+background:#fef2f2;
+border-color:#DC2626;
+color:#991b1b;
+}
 
 .section{
-margin-top:20px;
-border:1px solid #e2e8f0;
+margin-top:22px;
+padding:18px;
+background:#f9fafb;
+border-left:6px solid #cbd5e1;
 border-radius:6px;
-overflow:hidden;
 }
-
-.sectionHeader{
-background:#f8fafc;
-padding:14px;
-cursor:pointer;
-font-weight:bold;
-display:flex;
-justify-content:space-between;
-}
-
-.sectionContent{
-padding:16px;
-display:none;
-background:white;
-}
-
-.flagTag{
-padding:3px 8px;
-border-radius:4px;
-font-size:12px;
-font-weight:bold;
-}
-
-.flagGreen{background:#d1fae5;color:#065f46;}
-.flagYellow{background:#fef3c7;color:#92400e;}
-.flagRed{background:#fee2e2;color:#991b1b;}
 
 .footer{
 margin-top:35px;
@@ -121,7 +110,7 @@ margin:0;
 
 <body>
 
-<h2>🔬 Enterprise AI Forensic Due Diligence Console</h2>
+<h2>🔬 Enterprise AI Forensic Due Diligence</h2>
 
 <textarea id="input"
 placeholder="Enter Company Name and Country"></textarea>
@@ -137,9 +126,12 @@ placeholder="Enter Company Name and Country"></textarea>
 <div class="meta" id="meta"></div>
 </div>
 
-<div id="executiveSummary"></div>
+<div id="riskBox"></div>
 
-<div id="sections"></div>
+<div class="section">
+<h3>Investigative Findings</h3>
+<pre id="output"></pre>
+</div>
 
 <div class="footer">
 Created by Govind • Enterprise AI Compliance Platform
@@ -156,7 +148,7 @@ return "DD-"+new Date().getFullYear()+"-"+Math.floor(100000+Math.random()*900000
 async function run(){
 
 document.getElementById("report").style.display="block";
-document.getElementById("sections").innerHTML="Running enterprise screening...";
+document.getElementById("output").innerText="Running investigation...";
 
 const company=document.getElementById("input").value;
 
@@ -166,102 +158,19 @@ headers:{"Content-Type":"application/json"},
 body:JSON.stringify({
 prompt:
 "Create a structured forensic due diligence report for "+company+
-" using sections clearly labeled: Company Overview, Ownership & Management, Address Verification, Media & Reputation, Legal & Regulatory Issues, Sanctions Screening, Risk Conclusion. Provide clear analysis in each section. End with FLAG: GREEN or FLAG: YELLOW or FLAG: RED."
+". Include company overview, ownership, media review, legal issues, sanctions screening, and conclude with FLAG: GREEN or FLAG: YELLOW or FLAG: RED."
 })
 });
 
 const data=await res.json();
-const text=data.result || "";
+const result=data.result || "";
 
-buildEnterpriseReport(company,text);
+buildReport(company,result);
 }
 
-function buildEnterpriseReport(company,text){
+function buildReport(company,text){
 
 const caseID=generateCaseID();
 const today=new Date().toLocaleDateString();
 
-document.getElementById("meta").innerHTML=
-"<b>Case ID:</b> "+caseID+
-"<br><b>Company:</b> "+company+
-"<br><b>Date:</b> "+today+
-"<br><b>Screening Type:</b> AI Public Source Due Diligence";
-
-let overall="LOW";
-let summaryClass="low";
-
-if(text.includes("FLAG: RED")){
-overall="HIGH";
-summaryClass="high";
-}
-else if(text.includes("FLAG: YELLOW")){
-overall="MEDIUM";
-summaryClass="medium";
-}
-
-document.getElementById("executiveSummary").innerHTML=
-'<div class="summaryBox '+summaryClass+'">'+
-'Executive Risk Assessment: '+overall+' RISK'+
-'</div>';
-
-const sectionTitles=[
-"Company Overview",
-"Ownership & Management",
-"Address Verification",
-"Media & Reputation",
-"Legal & Regulatory Issues",
-"Sanctions Screening",
-"Risk Conclusion"
-];
-
-let html="";
-
-sectionTitles.forEach(title=>{
-
-let content="Section data not clearly identified.";
-
-if(text.includes(title)){
-const part=text.split(title)[1];
-if(part) content=part.split(/(?=[A-Z][a-z])/)[0];
-}
-
-let flag="flagGreen";
-if(content.toLowerCase().includes("concern")||content.toLowerCase().includes("risk"))
-flag="flagYellow";
-if(content.toLowerCase().includes("violation")||content.toLowerCase().includes("sanction"))
-flag="flagRed";
-
-html+=
-'<div class="section">'+
-'<div class="sectionHeader" onclick="toggleSection(this)">'+
-title+
-'<span class="flagTag '+flag+'">'+flag.replace("flag","").toUpperCase()+'</span>'+
-'</div>'+
-'<div class="sectionContent"><pre>'+content+'</pre></div>'+
-
-'</div>';
-});
-
-document.getElementById("sections").innerHTML=html;
-}
-
-function toggleSection(el){
-const content=el.nextElementSibling;
-content.style.display=
-content.style.display==="block"?"none":"block";
-}
-
-function downloadPDF(){
-const element=document.getElementById("report");
-html2pdf().set({
-margin:0.5,
-filename:'Enterprise_DD_Report.pdf',
-html2canvas:{scale:2},
-jsPDF:{unit:'in',format:'a4',orientation:'portrait'}
-}).from(element).save();
-}
-
-</script>
-
-</body>
-</html>
+document.getElementById("meta").inne
