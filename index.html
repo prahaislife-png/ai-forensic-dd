@@ -524,7 +524,7 @@ function buildReport(name,country,website,text){
           '<div class="sectionIcon">'+getSectionIcon(section.title)+'</div>'+
           '<h3 class="sectionTitle">'+section.title+'</h3>'+
         '</div>'+
-        '<pre class="sectionBody">'+section.body+'</pre>'+
+        '<div class="sectionBody">'+renderSectionBody(section.body)+'</div>'+
       '</div>';
     }
   });
@@ -549,7 +549,7 @@ function parseReportSections(text){
 
   sectionTitles.forEach(title=>{
     const escapedTitle=title.replace(/[.*+?^${}()|[\]\\]/g,"\\$&").replace(/\s+&\s+/g,"\\s*&\\s*");
-    const regex=new RegExp("(?:^|\\n)\\s*(?:#{2,3}\\s*|\\*\\*\\s*)?"+escapedTitle+"(?:\\s*\\*\\*)?\\s*:?","i");
+    const regex=new RegExp("(?:^|\\n)\\s*(?:#{1,3}\\s*|\\*\\*\\s*)?"+escapedTitle+"(?:\\s*\\*\\*)?\\s*:?","i");
     const match=regex.exec(normalized);
 
     if(match){
@@ -567,6 +567,15 @@ function parseReportSections(text){
   });
 }
 
+
+function renderSectionBody(value){
+  const safe=escapeHtml(value || "");
+
+  return safe.replace(/(^|\n)\s*#{1,3}\s+([^\n]+)/g,(match,prefix,title)=>{
+    return `${prefix}<h3>${title.trim()}</h3>`;
+  });
+}
+
 function renderRawReport(text){
   const safeText=escapeHtml((text || "").trim() || "No report content returned.");
 
@@ -575,7 +584,7 @@ function renderRawReport(text){
       '<div class="sectionIcon">📄</div>'+
       '<h3 class="sectionTitle">Investigation Report</h3>'+
     '</div>'+
-    '<pre class="sectionBody">'+safeText+'</pre>'+
+    '<div class="sectionBody">'+renderSectionBody(safeText)+'</div>'+
   '</div>';
 }
 
