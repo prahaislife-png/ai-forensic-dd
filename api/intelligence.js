@@ -7,16 +7,14 @@ const OPENCORPORATES_OFFICER_SEARCH_API = "https://api.opencorporates.com/v0.4/o
 function parseDomain(website = "") {
   if (!website) return "";
 
-  const candidate = String(website).trim();
+  const candidate = website.trim();
   if (!candidate) return "";
 
   try {
     const normalized = /^https?:\/\//i.test(candidate) ? candidate : `https://${candidate}`;
-    const hostname = new URL(normalized).hostname.replace(/^www\./i, "").toLowerCase();
-    if (hostname.includes(".")) return hostname;
-    return candidate;
+    return new URL(normalized).hostname.replace(/^www\./i, "").toLowerCase();
   } catch {
-    return candidate;
+    return "";
   }
 }
 
