@@ -1,266 +1,475 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>AI Forensic DD</title>
 
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
 <style>
-
-body{
-font-family: 'Inter', Segoe UI, Arial;
-background:#f1f5f9;
-max-width:1100px;
-margin:auto;
-padding:40px;
+:root {
+  --bg: #eef2f7;
+  --surface: #ffffff;
+  --surface-alt: #f8fafc;
+  --primary: #17375e;
+  --primary-strong: #102843;
+  --accent: #2e5b9f;
+  --text: #0f172a;
+  --text-muted: #475569;
+  --border: #d8e1ec;
+  --shadow: 0 20px 40px rgba(15, 23, 42, 0.08);
 }
 
-h2{
-color:#0f172a;
-margin-bottom:20px;
+* {
+  box-sizing: border-box;
 }
 
-.formCard{
-background:white;
-padding:25px;
-border-radius:12px;
-box-shadow:0 8px 24px rgba(0,0,0,0.06);
-margin-bottom:25px;
+body {
+  margin: 0;
+  font-family: "Inter", "Segoe UI", Arial, sans-serif;
+  background: linear-gradient(180deg, #f6f9fd 0%, var(--bg) 100%);
+  color: var(--text);
 }
 
-.inputRow{
-display:flex;
-gap:15px;
-margin-bottom:15px;
+.page {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 0 24px 40px;
 }
 
-input, textarea{
-flex:1;
-padding:12px;
-border-radius:8px;
-border:1px solid #cbd5e1;
-font-size:14px;
+.topBar {
+  background: linear-gradient(110deg, var(--primary-strong) 0%, var(--primary) 60%, #224b82 100%);
+  color: #fff;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 10px 24px rgba(16, 40, 67, 0.35);
 }
 
-textarea{
-height:90px;
-resize:none;
+.topBarInner {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 16px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
 }
 
-button{
-padding:12px 20px;
-margin-top:10px;
-margin-right:10px;
-background:#1E3A5F;
-color:white;
-border:none;
-border-radius:8px;
-cursor:pointer;
-font-weight:600;
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
-button:hover{
-opacity:0.9;
+.brandMark {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.16);
+  display: grid;
+  place-items: center;
+  font-size: 18px;
 }
 
-.report{
-background:white;
-padding:35px;
-margin-top:20px;
-border-radius:14px;
-box-shadow:0 10px 28px rgba(0,0,0,0.07);
+.brandTitle {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
 }
 
-.header{
-border-bottom:3px solid #1E3A5F;
-margin-bottom:25px;
-padding-bottom:15px;
+.brandSub {
+  margin: 2px 0 0;
+  font-size: 12px;
+  opacity: 0.85;
 }
 
-.meta{
-font-size:14px;
-color:#475569;
-margin-top:10px;
+.statusPill {
+  font-size: 12px;
+  padding: 7px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  background: rgba(255, 255, 255, 0.1);
+  white-space: nowrap;
 }
 
-.risk{
-padding:18px;
-margin-top:20px;
-font-weight:600;
-border-left:6px solid;
-border-radius:8px;
+.heroTitle {
+  margin: 26px 0 10px;
+  font-size: clamp(1.35rem, 2vw, 1.75rem);
+  font-weight: 800;
+  color: var(--primary-strong);
 }
 
-.green{
-background:#ecfdf5;
-border-color:#059669;
-color:#065f46;
+.heroSubtitle {
+  margin: 0 0 24px;
+  font-size: 0.95rem;
+  color: var(--text-muted);
 }
 
-.yellow{
-background:#fffbeb;
-border-color:#D97706;
-color:#92400e;
+.formCard,
+.report {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow: var(--shadow);
 }
 
-.red{
-background:#fef2f2;
-border-color:#DC2626;
-color:#991b1b;
+.formCard {
+  padding: 24px;
+  margin-bottom: 26px;
 }
 
-.section{
-margin-top:20px;
-padding:20px;
-background:#f8fafc;
-border-radius:10px;
-border:1px solid #e2e8f0;
+.inputRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin-bottom: 14px;
 }
 
-.section h3{
-margin-top:0;
-color:#1E3A5F;
-margin-bottom:10px;
+input,
+textarea {
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid #c6d3e3;
+  font-size: 14px;
+  font-family: inherit;
+  color: var(--text);
+  background: #fff;
 }
 
-.footer{
-margin-top:35px;
-padding-top:12px;
-border-top:1px solid #e2e8f0;
-font-size:13px;
-color:#64748b;
-text-align:center;
+input:focus,
+textarea:focus {
+  outline: 2px solid #bfdbfe;
+  border-color: #7aa4da;
 }
 
-pre{
-white-space:pre-wrap;
-margin:0;
-font-family:inherit;
+textarea {
+  height: 96px;
+  resize: none;
+  margin-bottom: 4px;
 }
 
+.buttonRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+button {
+  padding: 11px 18px;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  font-weight: 600;
+  font-family: inherit;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, opacity 0.2s ease;
+}
+
+button:hover {
+  transform: translateY(-1px);
+}
+
+button:active {
+  transform: translateY(0);
+}
+
+button.primary {
+  background: var(--primary);
+  color: #fff;
+  box-shadow: 0 8px 18px rgba(23, 55, 94, 0.3);
+}
+
+button.secondary {
+  background: #e7eef8;
+  color: var(--primary-strong);
+}
+
+.report {
+  padding: 26px;
+  margin-top: 20px;
+}
+
+.header {
+  border-bottom: 2px solid #e3ebf5;
+  margin-bottom: 20px;
+  padding-bottom: 14px;
+}
+
+.header h2 {
+  margin: 0;
+  font-size: 1.3rem;
+  color: var(--primary-strong);
+}
+
+.meta {
+  margin-top: 10px;
+  color: var(--text-muted);
+  font-size: 0.92rem;
+  line-height: 1.5;
+}
+
+.risk {
+  padding: 16px;
+  margin-top: 18px;
+  font-weight: 700;
+  border-left: 6px solid;
+  border-radius: 10px;
+  font-size: 0.95rem;
+}
+
+.green {
+  background: #ecfdf5;
+  border-color: #059669;
+  color: #065f46;
+}
+
+.yellow {
+  background: #fffbeb;
+  border-color: #d97706;
+  color: #92400e;
+}
+
+.red {
+  background: #fef2f2;
+  border-color: #dc2626;
+  color: #991b1b;
+}
+
+#sections {
+  display: grid;
+  gap: 14px;
+  margin-top: 14px;
+}
+
+.section {
+  padding: 16px 18px;
+  background: var(--surface-alt);
+  border: 1px solid #e1e8f2;
+  border-radius: 12px;
+}
+
+.sectionHead {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.sectionIcon {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: #dce8f7;
+  display: grid;
+  place-items: center;
+  font-size: 15px;
+}
+
+.sectionTitle {
+  margin: 0;
+  font-size: 0.98rem;
+  color: var(--primary);
+  font-weight: 700;
+}
+
+.sectionBody {
+  margin: 0;
+  white-space: pre-wrap;
+  font-family: inherit;
+  color: #1e293b;
+  line-height: 1.55;
+  font-size: 0.92rem;
+}
+
+.footer {
+  margin-top: 24px;
+  padding-top: 12px;
+  border-top: 1px solid #e4eaf3;
+  font-size: 12px;
+  color: #64748b;
+  text-align: center;
+}
+
+@media (max-width: 860px) {
+  .topBarInner {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .statusPill {
+    align-self: flex-start;
+  }
+
+  .inputRow {
+    grid-template-columns: 1fr;
+  }
+
+  .formCard,
+  .report {
+    padding: 18px;
+  }
+
+  .page {
+    padding: 0 14px 28px;
+  }
+}
 </style>
 </head>
 
 <body>
-
-<h2>🔬 Enterprise AI Forensic Due Diligence</h2>
-
-<div class="formCard">
-
-<div class="inputRow">
-<input type="text" id="partnerName" placeholder="Partner / Company Name">
-<input type="text" id="partnerAddress" placeholder="Registered Address">
+<div class="topBar">
+  <div class="topBarInner">
+    <div class="brand">
+      <div class="brandMark">🛡️</div>
+      <div>
+        <p class="brandTitle">Enterprise Investigation Console</p>
+        <p class="brandSub">AI-Enabled Forensic Due Diligence</p>
+      </div>
+    </div>
+    <div class="statusPill">Public Source Intelligence Workflow</div>
+  </div>
 </div>
 
-<textarea id="input" placeholder="Country / Additional Details"></textarea>
+<div class="page">
+  <h2 class="heroTitle">🔬 Forensic Due Diligence Workspace</h2>
+  <p class="heroSubtitle">Conduct structured partner screening with a standardized risk output for compliance and investigations.</p>
 
-<br>
+  <div class="formCard">
+    <div class="inputRow">
+      <input type="text" id="partnerName" placeholder="Partner / Company Name" />
+      <input type="text" id="partnerAddress" placeholder="Registered Address" />
+    </div>
 
-<button onclick="run()">Run Investigation</button>
-<button onclick="downloadPDF()">📄 Download PDF</button>
+    <textarea id="input" placeholder="Country / Additional Details"></textarea>
 
-</div>
+    <div class="buttonRow">
+      <button class="primary" onclick="run()">Run Investigation</button>
+      <button class="secondary" onclick="downloadPDF()">📄 Download PDF</button>
+    </div>
+  </div>
 
-<div id="report" class="report" style="display:none">
+  <div id="report" class="report" style="display:none">
+    <div class="header">
+      <h2>Forensic Due Diligence Report</h2>
+      <div class="meta" id="meta"></div>
+    </div>
 
-<div class="header">
-<h2>Forensic Due Diligence Report</h2>
-<div class="meta" id="meta"></div>
-</div>
+    <div id="riskBox"></div>
 
-<div id="riskBox"></div>
+    <div id="sections"></div>
 
-<div id="sections"></div>
-
-<div class="footer">
-Created by Govind • Enterprise AI Compliance Platform
-</div>
-
+    <div class="footer">
+      Created by Govind • Enterprise AI Compliance Platform
+    </div>
+  </div>
 </div>
 
 <script>
-
 async function run(){
 
-document.getElementById("report").style.display="block";
-document.getElementById("sections").innerHTML="Running investigation...";
+  document.getElementById("report").style.display="block";
+  document.getElementById("sections").innerHTML="Running investigation...";
 
-const name=document.getElementById("partnerName").value;
-const address=document.getElementById("partnerAddress").value;
-const details=document.getElementById("input").value;
+  const name=document.getElementById("partnerName").value;
+  const address=document.getElementById("partnerAddress").value;
+  const details=document.getElementById("input").value;
 
-const res=await fetch("/api/forensic",{
-method:"POST",
-headers:{"Content-Type":"application/json"},
-body:JSON.stringify({
-prompt:
-"Create a structured forensic due diligence report for "+name+
-". Registered Address: "+address+
-". Details: "+details+
-". Use sections: Company Overview, Ownership & Management, Address Verification, Media & Reputation, Legal & Regulatory Issues, Sanctions Screening, Risk Conclusion. End with FLAG: GREEN or FLAG: YELLOW or FLAG: RED."
-})
-});
+  const res=await fetch("/api/forensic",{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({
+      prompt:
+      "Create a structured forensic due diligence report for "+name+
+      ". Registered Address: "+address+
+      ". Details: "+details+
+      ". Use sections: Company Overview, Ownership & Management, Address Verification, Media & Reputation, Legal & Regulatory Issues, Sanctions Screening, Risk Conclusion. End with FLAG: GREEN or FLAG: YELLOW or FLAG: RED."
+    })
+  });
 
-const data=await res.json();
-const text=data.result || "";
+  const data=await res.json();
+  const text=data.result || "";
 
-buildReport(name,address,text);
+  buildReport(name,address,text);
 }
 
 function buildReport(name,address,text){
 
-const today=new Date().toLocaleDateString();
+  const today=new Date().toLocaleDateString();
 
-document.getElementById("meta").innerHTML=
-"<b>Partner:</b> "+name+
-"<br><b>Address:</b> "+address+
-"<br><b>Date:</b> "+today+
-"<br><b>Screening Type:</b> AI Public Source Due Diligence";
+  document.getElementById("meta").innerHTML=
+  "<b>Partner:</b> "+name+
+  "<br><b>Address:</b> "+address+
+  "<br><b>Date:</b> "+today+
+  "<br><b>Screening Type:</b> AI Public Source Due Diligence";
 
-let flag="GREEN";
-let riskClass="green";
-let label="LOW RISK";
+  let flag="GREEN";
+  let riskClass="green";
+  let label="LOW RISK";
 
-if(text.includes("FLAG: RED")){
-flag="RED";
-riskClass="red";
-label="HIGH RISK";
+  if(text.includes("FLAG: RED")){
+    flag="RED";
+    riskClass="red";
+    label="HIGH RISK";
+  }
+  else if(text.includes("FLAG: YELLOW")){
+    flag="YELLOW";
+    riskClass="yellow";
+    label="MEDIUM RISK";
+  }
+
+  document.getElementById("riskBox").innerHTML=
+  '<div class="risk '+riskClass+'">'+
+  'Overall Risk Assessment: '+label+' ('+flag+')'+
+  '</div>';
+
+  const parts=text.split(/\n(?=[A-Z])/);
+
+  let html="";
+
+  parts.forEach(p=>{
+    if(p.trim().length>40){
+      const title=(p.split(":")[0] || "Investigation Section").trim();
+      html+='<div class="section">'+
+        '<div class="sectionHead">'+
+          '<div class="sectionIcon">'+getSectionIcon(title)+'</div>'+
+          '<h3 class="sectionTitle">'+title+'</h3>'+
+        '</div>'+
+        '<pre class="sectionBody">'+p+'</pre>'+
+      '</div>';
+    }
+  });
+
+  document.getElementById("sections").innerHTML=html;
 }
-else if(text.includes("FLAG: YELLOW")){
-flag="YELLOW";
-riskClass="yellow";
-label="MEDIUM RISK";
-}
 
-document.getElementById("riskBox").innerHTML=
-'<div class="risk '+riskClass+'">'+
-'Overall Risk Assessment: '+label+' ('+flag+')'+
-'</div>';
+function getSectionIcon(title){
+  const t=(title || "").toLowerCase();
 
-const parts=text.split(/\n(?=[A-Z])/);
+  if(t.includes("overview")) return "🏢";
+  if(t.includes("ownership") || t.includes("management")) return "👥";
+  if(t.includes("address")) return "📍";
+  if(t.includes("media") || t.includes("reputation")) return "📰";
+  if(t.includes("legal") || t.includes("regulatory")) return "⚖️";
+  if(t.includes("sanctions")) return "🚫";
+  if(t.includes("risk") || t.includes("conclusion")) return "📊";
 
-let html="";
-
-parts.forEach(p=>{
-if(p.trim().length>40){
-html+='<div class="section"><pre>'+p+'</pre></div>';
-}
-});
-
-document.getElementById("sections").innerHTML=html;
+  return "📁";
 }
 
 function downloadPDF(){
-const element=document.getElementById("report");
+  const element=document.getElementById("report");
 
-html2pdf().set({
-margin:0.5,
-filename:'AI_Forensic_DD_Report.pdf',
-html2canvas:{scale:2},
-jsPDF:{unit:'in',format:'a4',orientation:'portrait'}
-}).from(element).save();
+  html2pdf().set({
+    margin:0.5,
+    filename:'AI_Forensic_DD_Report.pdf',
+    html2canvas:{scale:2},
+    jsPDF:{unit:'in',format:'a4',orientation:'portrait'}
+  }).from(element).save();
 }
-
 </script>
 
 </body>
