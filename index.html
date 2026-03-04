@@ -278,11 +278,31 @@ button.secondary {
 
 .sectionBody {
   margin: 0;
-  white-space: pre-wrap;
-  font-family: inherit;
   color: #1e293b;
   line-height: 1.55;
   font-size: 0.92rem;
+}
+
+.sectionBody h3,
+.sectionBody h4 {
+  margin: 10px 0 8px;
+  color: var(--primary-strong);
+}
+
+.sectionBody h3 {
+  font-size: 1rem;
+}
+
+.sectionBody h4 {
+  font-size: 0.94rem;
+}
+
+.sectionBody p {
+  margin: 0 0 8px;
+}
+
+.sectionBody p:last-child {
+  margin-bottom: 0;
 }
 
 .footer {
@@ -432,18 +452,103 @@ function buildReport(name,address,text){
 
   parts.forEach(p=>{
     if(p.trim().length>40){
-      const title=(p.split(":")[0] || "Investigation Section").trim();
+      const title=getSectionTitle(p);
+      const body=getSectionBody(p,title);
       html+='<div class="section">'+
         '<div class="sectionHead">'+
           '<div class="sectionIcon">'+getSectionIcon(title)+'</div>'+
           '<h3 class="sectionTitle">'+title+'</h3>'+
         '</div>'+
-        '<pre class="sectionBody">'+p+'</pre>'+
+        '<div class="sectionBody">'+markdownToHtml(body)+'</div>'+
       '</div>';
     }
   });
 
   document.getElementById("sections").innerHTML=html;
+}
+
+function getSectionTitle(sectionText){
+  const firstLine=(sectionText || "").split("\n")[0].trim();
+  const cleaned=firstLine
+    .replace(/^##+\s*/, "")
+    .replace(/^\*\*(.*?)\*\*$/, "$1")
+    .split(":")[0]
+    .trim();
+
+  return cleaned || "Investigation Section";
+}
+
+function getSectionBody(sectionText,title){
+  const lines=(sectionText || "").split("\n");
+  const firstLine=(lines[0] || "").trim();
+  const normalizedTitle=(title || "").toLowerCase();
+  const normalizedFirst=firstLine
+    .replace(/^##+\s*/, "")
+    .replace(/^\*\*(.*?)\*\*$/, "$1")
+    .split(":")[0]
+    .trim()
+    .toLowerCase();
+
+  if(normalizedFirst && normalizedFirst===normalizedTitle){
+    return lines.slice(1).join("\n").trim() || sectionText;
+  }
+
+  return sectionText;
+}
+
+function escapeHtml(text){
+  return text
+    .replace(/&/g,"&amp;")
+    .replace(/</g,"&lt;")
+    .replace(/>/g,"&gt;")
+    .replace(/"/g,"&quot;")
+    .replace(/'/g,"&#39;");
+}
+
+function markdownToHtml(markdown){
+  const safe=escapeHtml(markdown || "");
+  const lines=safe.split(/\n+/);
+  const blocks=[];
+  let paragraph=[];
+
+  function flushParagraph(){
+    if(paragraph.length){
+      const text=paragraph.join(" ").trim();
+      if(text){
+        blocks.push("<p>"+text+"</p>");
+      }
+      paragraph=[];
+    }
+  }
+
+  lines.forEach(line=>{
+    const trimmed=line.trim();
+
+    if(!trimmed){
+      flushParagraph();
+      return;
+    }
+
+    if(/^###\s+/.test(trimmed)){
+      flushParagraph();
+      blocks.push("<h4>"+trimmed.replace(/^###\s+/,"")+"</h4>");
+      return;
+    }
+
+    if(/^##\s+/.test(trimmed)){
+      flushParagraph();
+      blocks.push("<h3>"+trimmed.replace(/^##\s+/,"")+"</h3>");
+      return;
+    }
+
+    paragraph.push(trimmed.replace(/^[-*]\s+/,""));
+  });
+
+  flushParagraph();
+
+  return blocks
+    .join("")
+    .replace(/\*\*(.+?)\*\*/g,"<strong>$1</strong>");
 }
 
 function getSectionIcon(title){
