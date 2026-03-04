@@ -87,6 +87,17 @@ body {
   opacity: 0.85;
 }
 
+.topBarMeta {
+  text-align: right;
+}
+
+.projectBy {
+  margin: 0 0 8px;
+  font-size: 12px;
+  font-weight: 500;
+  opacity: 0.92;
+}
+
 .statusPill {
   font-size: 12px;
   padding: 7px 10px;
@@ -109,7 +120,15 @@ body {
   color: var(--text-muted);
 }
 
+.workspaceGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(260px, 1fr);
+  gap: 20px;
+  align-items: start;
+}
+
 .formCard,
+.pipelineCard,
 .report {
   background: var(--surface);
   border: 1px solid var(--border);
@@ -117,9 +136,22 @@ body {
   box-shadow: var(--shadow);
 }
 
-.formCard {
+.formCard,
+.pipelineCard {
   padding: 24px;
-  margin-bottom: 26px;
+}
+
+.formHeading {
+  margin: 0;
+  font-size: 1.1rem;
+  color: var(--primary-strong);
+}
+
+.formDesc {
+  margin: 10px 0 18px;
+  font-size: 0.92rem;
+  color: var(--text-muted);
+  line-height: 1.5;
 }
 
 .inputRow {
@@ -147,16 +179,11 @@ textarea:focus {
   border-color: #7aa4da;
 }
 
-textarea {
-  height: 96px;
-  resize: none;
-  margin-bottom: 4px;
-}
-
 .buttonRow {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
+  margin-top: 4px;
 }
 
 button {
@@ -186,6 +213,29 @@ button.primary {
 button.secondary {
   background: #e7eef8;
   color: var(--primary-strong);
+}
+
+.pipelineTitle {
+  margin: 0 0 14px;
+  font-size: 1.05rem;
+  color: var(--primary-strong);
+}
+
+.pipelineList {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 11px;
+}
+
+.pipelineItem {
+  padding: 11px 12px;
+  border: 1px solid #e1e8f2;
+  border-radius: 10px;
+  background: var(--surface-alt);
+  font-size: 0.9rem;
+  color: #1e293b;
 }
 
 .report {
@@ -294,10 +344,24 @@ button.secondary {
   text-align: center;
 }
 
+@media (max-width: 960px) {
+  .workspaceGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .pipelineCard {
+    order: 2;
+  }
+}
+
 @media (max-width: 860px) {
   .topBarInner {
     flex-direction: column;
     align-items: flex-start;
+  }
+
+  .topBarMeta {
+    text-align: left;
   }
 
   .statusPill {
@@ -309,6 +373,7 @@ button.secondary {
   }
 
   .formCard,
+  .pipelineCard,
   .report {
     padding: 18px;
   }
@@ -330,26 +395,47 @@ button.secondary {
         <p class="brandSub">AI-Enabled Forensic Due Diligence</p>
       </div>
     </div>
-    <div class="statusPill">Public Source Intelligence Workflow</div>
+    <div class="topBarMeta">
+      <p class="projectBy">Project by Govind</p>
+      <div class="statusPill">Public Source Intelligence Workflow</div>
+    </div>
   </div>
 </div>
 
 <div class="page">
-  <h2 class="heroTitle">🔬 Forensic Due Diligence Workspace</h2>
-  <p class="heroSubtitle">Conduct structured partner screening with a standardized risk output for compliance and investigations.</p>
+  <h2 class="heroTitle">AI Forensic Intelligence Platform</h2>
+  <p class="heroSubtitle">Corporate Risk Screening &amp; Compliance Analysis</p>
 
-  <div class="formCard">
-    <div class="inputRow">
-      <input type="text" id="partnerName" placeholder="Partner / Company Name" />
-      <input type="text" id="partnerAddress" placeholder="Registered Address" />
+  <div class="workspaceGrid">
+    <div class="formCard">
+      <h3 class="formHeading">Forensic Due Diligence Investigation</h3>
+      <p class="formDesc">Run automated corporate screening and generate structured risk intelligence reports.</p>
+
+      <div class="inputRow">
+        <input type="text" id="companyName" placeholder="Company Name" />
+        <input type="text" id="country" placeholder="Country" />
+      </div>
+
+      <input type="text" id="website" placeholder="Website" />
+
+      <div class="buttonRow">
+        <button class="primary" onclick="run()">Run Investigation</button>
+        <button class="secondary" onclick="downloadPDF()">Download PDF</button>
+      </div>
     </div>
 
-    <textarea id="input" placeholder="Country / Additional Details"></textarea>
-
-    <div class="buttonRow">
-      <button class="primary" onclick="run()">Run Investigation</button>
-      <button class="secondary" onclick="downloadPDF()">📄 Download PDF</button>
-    </div>
+    <aside class="pipelineCard">
+      <h3 class="pipelineTitle">Investigation Pipeline</h3>
+      <ul class="pipelineList">
+        <li class="pipelineItem">✓ Corporate Registry Verification</li>
+        <li class="pipelineItem">✓ Sanctions Screening (OpenSanctions)</li>
+        <li class="pipelineItem">✓ Offshore Ownership Screening (ICIJ Offshore Leaks)</li>
+        <li class="pipelineItem">✓ Adverse Media Intelligence</li>
+        <li class="pipelineItem">✓ Address Verification</li>
+        <li class="pipelineItem">✓ Regulatory Compliance Check</li>
+        <li class="pipelineItem">✓ AI Risk Analysis Engine</li>
+      </ul>
+    </aside>
   </div>
 
   <div id="report" class="report" style="display:none">
@@ -374,9 +460,9 @@ async function run(){
   document.getElementById("report").style.display="block";
   document.getElementById("sections").innerHTML="Running investigation...";
 
-  const name=document.getElementById("partnerName").value;
-  const address=document.getElementById("partnerAddress").value;
-  const details=document.getElementById("input").value;
+  const name=document.getElementById("companyName").value;
+  const country=document.getElementById("country").value;
+  const website=document.getElementById("website").value;
 
   const res=await fetch("/api/forensic",{
     method:"POST",
@@ -384,8 +470,8 @@ async function run(){
     body:JSON.stringify({
       prompt:
       "Create a structured forensic due diligence report for "+name+
-      ". Registered Address: "+address+
-      ". Details: "+details+
+      ". Country: "+country+
+      ". Website: "+website+
       ". Use sections: Company Overview, Ownership & Management, Address Verification, Media & Reputation, Legal & Regulatory Issues, Sanctions Screening, Risk Conclusion. End with FLAG: GREEN or FLAG: YELLOW or FLAG: RED."
     })
   });
@@ -393,16 +479,17 @@ async function run(){
   const data=await res.json();
   const text=data.result || "";
 
-  buildReport(name,address,text);
+  buildReport(name,country,website,text);
 }
 
-function buildReport(name,address,text){
+function buildReport(name,country,website,text){
 
   const today=new Date().toLocaleDateString();
 
   document.getElementById("meta").innerHTML=
-  "<b>Partner:</b> "+name+
-  "<br><b>Address:</b> "+address+
+  "<b>Company:</b> "+name+
+  "<br><b>Country:</b> "+country+
+  "<br><b>Website:</b> "+website+
   "<br><b>Date:</b> "+today+
   "<br><b>Screening Type:</b> AI Public Source Due Diligence";
 
