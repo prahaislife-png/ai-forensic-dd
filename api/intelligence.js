@@ -11,16 +11,10 @@ function parseDomain(website = "") {
   if (!candidate) return "";
 
   try {
-    const normalized = /^https?:\/\//i.test(candidate)
-      ? candidate
-      : `https://${candidate}`;
+    const normalized = /^https?:\/\//i.test(candidate) ? candidate : `https://${candidate}`;
     return new URL(normalized).hostname.replace(/^www\./i, "").toLowerCase();
   } catch {
-    return candidate
-      .replace(/^https?:\/\//i, "")
-      .replace(/^www\./i, "")
-      .split(/[/?#]/)[0]
-      .toLowerCase();
+    return "";
   }
 }
 
@@ -131,9 +125,9 @@ async function getDomainIntel(website) {
   } catch {
     return {
       domain,
-      registeredYear: "Unknown",
-      registrar: "Unknown",
-      status: "Unknown",
+      registeredYear: "Not available",
+      registrar: "Not available",
+      status: "Not available",
       summary: `Domain intelligence could not be confirmed for ${domain}.`
     };
   }
@@ -146,7 +140,7 @@ async function getKnowledgeIntel(companyName) {
       wikipediaUrl: null,
       wikidataId: null,
       summary:
-        "No verified Wikipedia or Wikidata entity was identified for the company in publicly indexed knowledge graphs."
+        "No verified Wikipedia or Wikidata entity was identified for the company in public knowledge graph datasets."
     };
   }
 
@@ -155,12 +149,16 @@ async function getKnowledgeIntel(companyName) {
       action: "query",
       list: "search",
       srsearch: companyName,
-      srlimit: "1",
+      srlimit: "10",
       format: "json"
     });
 
     const searchData = await fetchJson(`${WIKIPEDIA_SEARCH_API}?${searchParams.toString()}`);
-    const topResult = searchData?.query?.search?.[0];
+    const searchResults = Array.isArray(searchData?.query?.search) ? searchData.query.search : [];
+    const normalizedCompanyName = companyName.toLowerCase();
+    const topResult = searchResults.find((result) =>
+      result?.title?.toLowerCase().includes(normalizedCompanyName)
+    );
 
     if (!topResult?.title) {
       return {
@@ -168,7 +166,7 @@ async function getKnowledgeIntel(companyName) {
         wikipediaUrl: null,
         wikidataId: null,
         summary:
-          "No verified Wikipedia or Wikidata entity was identified for the company in publicly indexed knowledge graphs."
+          "No verified Wikipedia or Wikidata entity was identified for the company in public knowledge graph datasets."
       };
     }
 
@@ -179,14 +177,18 @@ async function getKnowledgeIntel(companyName) {
       action: "wbsearchentities",
       search: companyName,
       language: "en",
-      limit: "1",
+      limit: "10",
       format: "json"
     });
 
     let wikidataId = null;
     try {
       const wikidataData = await fetchJson(`${WIKIDATA_ENTITY_API}?${wikidataParams.toString()}`);
-      wikidataId = wikidataData?.search?.[0]?.id || null;
+      const wikidataResults = Array.isArray(wikidataData?.search) ? wikidataData.search : [];
+      const matchedWikidata = wikidataResults.find((result) =>
+        result?.label?.toLowerCase().includes(normalizedCompanyName)
+      );
+      wikidataId = matchedWikidata?.id || null;
     } catch {
       wikidataId = null;
     }
@@ -203,7 +205,7 @@ async function getKnowledgeIntel(companyName) {
       wikipediaUrl: null,
       wikidataId: null,
       summary:
-        "No verified Wikipedia or Wikidata entity was identified for the company in publicly indexed knowledge graphs."
+        "No verified Wikipedia or Wikidata entity was identified for the company in public knowledge graph datasets."
     };
   }
 }
@@ -251,7 +253,9 @@ async function getNetworkIntel(companyName) {
 
     const hasSignals = relatedCompanies.length || relatedOfficers.length;
     const summary = hasSignals
-      ? `Corporate network mapping identified ${relatedCompanies.length} related compan${relatedCompanies.length === 1 ? "y" : "ies"} and ${relatedOfficers.length} related officer record${relatedOfficers.length === 1 ? "" : "s"}.`
+      ? `Corporate network mapping identified ${relatedCompanies.length} related compan${
+          relatedCompanies.length === 1 ? "y" : "ies"
+        } and ${relatedOfficers.length} related officer record${relatedOfficers.length === 1 ? "" : "s"}.`
       : "No high-risk ownership links or sanctioned entities were identified within the corporate relationship network.";
 
     return {
