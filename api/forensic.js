@@ -1,5 +1,6 @@
 const OPEN_SANCTIONS_ENDPOINT = "https://api.opensanctions.org/match/default";
 const OFFSHORE_LEAKS_ENDPOINT = "https://offshoreleaks.icij.org/api/v1/reconcile";
+const SERPAPI_ENDPOINT = "https://serpapi.com/search";
 const PERPLEXITY_ENDPOINT = "https://api.perplexity.ai/chat/completions";
 
 function escapeHtml(value = "") {
@@ -27,75 +28,41 @@ function formatSourceAsClickableLink(number, url) {
   return `[${number}] <a href="${safeUrl}" target="_blank" rel="noopener noreferrer">${safeUrl}</a>`;
 }
 
-function formatReportWithSources(report = "") {
+function extractReportBodyWithoutSources(report = "") {
   const raw = String(report || "").trim();
-
-  if (!raw) return "";
-
   const sourcesHeadingRegex = /\n\s*(?:#{2,3}\s*|\*\*\s*)?sources(?:\s*\*\*)?\s*:?\s*\n?/i;
   const headingMatch = sourcesHeadingRegex.exec(raw);
 
   if (!headingMatch) {
-    return raw.replace(/\[(\d+)\]/g, "").replace(/[ \t]+\n/g, "\n").trim();
+    return raw;
   }
 
-  const body = raw.slice(0, headingMatch.index).trimEnd();
-  const sourcesBlock = raw
-    .slice(headingMatch.index + headingMatch[0].length)
-    .trim();
+  return raw.slice(0, headingMatch.index).trim();
+}
 
-  const sourceLines = sourcesBlock
-    .split(/\r?\n/)
-    .map((line) => line.trim())
-    .filter(Boolean);
+function formatReportWithSources(report = "", evidenceSources = []) {
+  const rawBody = extractReportBodyWithoutSources(report);
+  const validSources = evidenceSources.filter((source) => isValidHttpUrl(source));
 
-  const parsedSources = sourceLines
-    .map((line) => {
-      const sourceMatch = line.match(/^\[(\d+)\]\s+(.+)$/);
-      if (!sourceMatch) return null;
+  if (!rawBody) return "";
 
-      const sourceNumber = Number(sourceMatch[1]);
-      const remainder = sourceMatch[2].trim();
-      const urlMatch = remainder.match(/https?:\/\/[^\s)\]>"']+/i);
-      const url = urlMatch?.[0]?.trim() || "";
-
-      if (!isValidHttpUrl(url)) {
-        return null;
-      }
-
-      return {
-        originalNumber: sourceNumber,
-        url
-      };
-    })
-    .filter(Boolean);
-
-  if (!parsedSources.length) {
-    return body.replace(/\[(\d+)\]/g, "").replace(/[ \t]+\n/g, "\n").trim();
+  if (!validSources.length) {
+    return rawBody.replace(/\[(\d+)\]/g, "").replace(/[ \t]+\n/g, "\n").trim();
   }
 
-  const renumberMap = new Map();
-  const normalizedSources = parsedSources.map((source, index) => {
-    const newNumber = index + 1;
-    renumberMap.set(source.originalNumber, newNumber);
+  const allowedNumbers = new Set(validSources.map((_, index) => index + 1));
 
-    return {
-      number: newNumber,
-      url: source.url
-    };
-  });
-
-  const normalizedBody = body
+  const normalizedBody = rawBody
     .replace(/\[(\d+)\]/g, (_, number) => {
-      const mapped = renumberMap.get(Number(number));
-      return mapped ? `[${mapped}]` : "";
+      const citation = Number(number);
+      return allowedNumbers.has(citation) ? `[${citation}]` : "";
     })
     .replace(/[ \t]+\n/g, "\n")
     .trim();
 
   const sourcesSection = [
     "Sources:",
-    ...normalizedSources.map((source) => formatSourceAsClickableLink(source.number, source.url))
+    ...validSources.map((source, index) => formatSourceAsClickableLink(index + 1, source))
   ].join("\n");
 
   return [normalizedBody, sourcesSection].filter(Boolean).join("\n\n");
@@ -229,31 +196,87 @@ async function getOffshoreScreening(company) {
   }
 }
 
+async function getEvidenceSources(company) {
+  if (!company || !process.env.SERPAPI_KEY) {
+    return [];
+  }
+
+  try {
+    const search = await fetch(
+      `${SERPAPI_ENDPOINT}?engine=google&q=${encodeURIComponent(company)}&api_key=${process.env.SERPAPI_KEY}`
+    );
+
+    if (!search.ok) {
+      return [];
+    }
+
+    const data = await search.json();
+
+    return (data?.organic_results || [])
+      .slice(0, 5)
+      .map((result) => ({
+        title: result?.title || "Untitled source",
+        link: result?.link || "",
+        snippet: result?.snippet || ""
+      }))
+      .filter((source) => isValidHttpUrl(source.link));
+  } catch {
+    return [];
+  }
+}
+
+function buildEvidenceBlock(sources = []) {
+  if (!sources.length) {
+    return "No verified web evidence was retrieved. Do not use citations if no evidence sources are listed.";
+  }
+
+  return sources
+    .map((source, index) => {
+      const number = index + 1;
+      return [
+        `[${number}] ${source.title}`,
+        source.link,
+        source.snippet || "No summary available."
+      ].join("\n");
+    })
+    .join("\n\n");
+}
+
 export default async function handler(req, res) {
   try {
     const incomingPrompt = req.body?.prompt || "";
     const company = req.body?.company || extractCompanyFromPrompt(incomingPrompt);
     const sanctionsResult = await getSanctionsScreening(company);
     const offshoreResult = await getOffshoreScreening(company);
+    const evidenceSources = await getEvidenceSources(company);
+    const evidenceBlock = buildEvidenceBlock(evidenceSources);
 
     const promptWithScreening = [
-      incomingPrompt,
+      "You are a forensic due diligence analyst.",
+      "Analyze the verified evidence collected from public sources and the screening results below.",
+      "Do not invent facts, sources, or URLs. Use only the provided evidence and screening data.",
+      "",
+      "Verified OSINT Evidence:",
+      evidenceBlock,
+      "",
       sanctionsResult,
+      "",
       "Offshore Screening Result:",
       offshoreResult,
       "",
-      "Include a dedicated report section titled 'Offshore Ownership Screening' based on the offshore screening result above.",
-      "Every citation [1], [2], etc must correspond to a real URL.",
-      "At the end of the report include a 'Sources' section listing the exact links used.",
-      "Do not output generic labels like 'business directories'. Always provide the full URL.",
-      "Ensure the Sources section appears after the Risk Conclusion section.",
+      "Write a structured forensic due diligence report using sections: Company Overview, Ownership & Management, Address Verification, Offshore Ownership Screening, Media & Reputation, Legal & Regulatory Issues, Sanctions Screening, Risk Conclusion.",
+      "Use citation markers [1], [2], etc only for claims supported by the evidence entries above.",
       "If a source URL is unavailable, remove the citation number from the report text.",
-      "Format the sources section exactly as numbered lines like:",
+      "Ensure the Sources section appears after the Risk Conclusion section.",
+      "At the end, include a Sources section listing the exact URLs from the evidence list in this format:",
       "Sources:",
       "[1] https://example.com",
       "[2] https://example.com",
       "[3] https://example.com",
-      "Ensure citation numbers in the report body exactly match the listed source numbers."
+      "End with FLAG: GREEN or FLAG: YELLOW or FLAG: RED.",
+      "",
+      "Original report request context:",
+      incomingPrompt
     ].join("\n\n");
 
     const response = await fetch(PERPLEXITY_ENDPOINT, {
@@ -275,9 +298,10 @@ export default async function handler(req, res) {
 
     const data = await response.json();
     const modelResult = data.choices?.[0]?.message?.content || "";
+    const sourceUrls = evidenceSources.map((source) => source.link);
 
     res.status(200).json({
-      result: formatReportWithSources(modelResult)
+      result: formatReportWithSources(modelResult, sourceUrls)
     });
   } catch (err) {
     res.status(500).json({ error: err.message });
