@@ -1,490 +1,483 @@
-!DOCTYPE html
-html lang=en
-head
-meta charset=UTF-8 
-meta name=viewport content=width=device-width, initial-scale=1.0 
-titleAI Forensic DDtitle
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>AI Forensic DD</title>
 
-link rel=preconnect href=httpsfonts.googleapis.com 
-link rel=preconnect href=httpsfonts.gstatic.com crossorigin 
-link href=httpsfonts.googleapis.comcss2family=Interwght@400;500;600;700;800&display=swap rel=stylesheet 
-script src=httpscdnjs.cloudflare.comajaxlibshtml2pdf.js0.10.1html2pdf.bundle.min.jsscript
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
-style
-root {
-  --bg #eef2f7;
-  --surface #ffffff;
-  --surface-alt #f8fafc;
-  --primary #17375e;
-  --primary-strong #102843;
-  --accent #2e5b9f;
-  --text #0f172a;
-  --text-muted #475569;
-  --border #d8e1ec;
-  --shadow 0 20px 40px rgba(15, 23, 42, 0.08);
+<style>
+:root {
+  --bg: #eef2f7;
+  --surface: #ffffff;
+  --surface-alt: #f8fafc;
+  --primary: #17375e;
+  --primary-strong: #102843;
+  --accent: #2e5b9f;
+  --text: #0f172a;
+  --text-muted: #475569;
+  --border: #d8e1ec;
+  --shadow: 0 20px 40px rgba(15, 23, 42, 0.08);
 }
 
- {
-  box-sizing border-box;
+* {
+  box-sizing: border-box;
 }
 
 body {
-  margin 0;
-  font-family Inter, Segoe UI, Arial, sans-serif;
-  background linear-gradient(180deg, #f6f9fd 0%, var(--bg) 100%);
-  color var(--text);
+  margin: 0;
+  font-family: "Inter", "Segoe UI", Arial, sans-serif;
+  background: linear-gradient(180deg, #f6f9fd 0%, var(--bg) 100%);
+  color: var(--text);
 }
 
 .page {
-  max-width 1120px;
-  margin 0 auto;
-  padding 0 24px 40px;
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 0 24px 40px;
 }
 
 .topBar {
-  background linear-gradient(110deg, var(--primary-strong) 0%, var(--primary) 60%, #224b82 100%);
-  color #fff;
-  border-bottom 1px solid rgba(255, 255, 255, 0.12);
-  box-shadow 0 10px 24px rgba(16, 40, 67, 0.35);
+  background: linear-gradient(110deg, var(--primary-strong) 0%, var(--primary) 60%, #224b82 100%);
+  color: #fff;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 10px 24px rgba(16, 40, 67, 0.35);
 }
 
 .topBarInner {
-  max-width 1120px;
-  margin 0 auto;
-  padding 16px 24px;
-  display flex;
-  align-items center;
-  justify-content space-between;
-  gap 16px;
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 16px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
 }
 
 .brand {
-  display flex;
-  align-items center;
-  gap 12px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
 .brandMark {
-  width 34px;
-  height 34px;
-  border-radius 8px;
-  background rgba(255, 255, 255, 0.16);
-  display grid;
-  place-items center;
-  font-size 18px;
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.16);
+  display: grid;
+  place-items: center;
+  font-size: 18px;
 }
 
 .brandTitle {
-  margin 0;
-  font-size 15px;
-  font-weight 700;
-  letter-spacing 0.02em;
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
 }
 
 .brandSub {
-  margin 2px 0 0;
-  font-size 12px;
-  opacity 0.85;
+  margin: 2px 0 0;
+  font-size: 12px;
+  opacity: 0.85;
 }
 
 .topBarMeta {
-  text-align right;
+  text-align: right;
 }
 
 .projectBy {
-  margin 0 0 8px;
-  font-size 12px;
-  font-weight 500;
-  opacity 0.92;
+  margin: 0 0 8px;
+  font-size: 12px;
+  font-weight: 500;
+  opacity: 0.92;
 }
 
 .statusPill {
-  font-size 12px;
-  padding 7px 10px;
-  border-radius 999px;
-  border 1px solid rgba(255, 255, 255, 0.35);
-  background rgba(255, 255, 255, 0.1);
-  white-space nowrap;
+  font-size: 12px;
+  padding: 7px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  background: rgba(255, 255, 255, 0.1);
+  white-space: nowrap;
 }
 
 .heroTitle {
-  margin 26px 0 10px;
-  font-size clamp(1.35rem, 2vw, 1.75rem);
-  font-weight 800;
-  color var(--primary-strong);
+  margin: 26px 0 10px;
+  font-size: clamp(1.35rem, 2vw, 1.75rem);
+  font-weight: 800;
+  color: var(--primary-strong);
 }
 
 .heroSubtitle {
-  margin 0 0 24px;
-  font-size 0.95rem;
-  color var(--text-muted);
+  margin: 0 0 24px;
+  font-size: 0.95rem;
+  color: var(--text-muted);
 }
 
 .workspaceGrid {
-  display grid;
-  grid-template-columns minmax(0, 2fr) minmax(260px, 1fr);
-  gap 20px;
-  align-items start;
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(260px, 1fr);
+  gap: 20px;
+  align-items: start;
 }
 
 .formCard,
 .pipelineCard,
 .report {
-  background var(--surface);
-  border 1px solid var(--border);
-  border-radius 16px;
-  box-shadow var(--shadow);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow: var(--shadow);
 }
 
 .formCard,
 .pipelineCard {
-  padding 24px;
+  padding: 24px;
 }
 
 .formHeading {
-  margin 0;
-  font-size 1.1rem;
-  color var(--primary-strong);
+  margin: 0;
+  font-size: 1.1rem;
+  color: var(--primary-strong);
 }
 
 .formDesc {
-  margin 10px 0 18px;
-  font-size 0.92rem;
-  color var(--text-muted);
-  line-height 1.5;
+  margin: 10px 0 18px;
+  font-size: 0.92rem;
+  color: var(--text-muted);
+  line-height: 1.5;
 }
 
 .inputRow {
-  display grid;
-  grid-template-columns 1fr 1fr;
-  gap 14px;
-  margin-bottom 14px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin-bottom: 14px;
 }
 
 input,
 textarea {
-  width 100%;
-  padding 12px 14px;
-  border-radius 10px;
-  border 1px solid #c6d3e3;
-  font-size 14px;
-  font-family inherit;
-  color var(--text);
-  background #fff;
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid #c6d3e3;
+  font-size: 14px;
+  font-family: inherit;
+  color: var(--text);
+  background: #fff;
 }
 
-inputfocus,
-textareafocus {
-  outline 2px solid #bfdbfe;
-  border-color #7aa4da;
+input:focus,
+textarea:focus {
+  outline: 2px solid #bfdbfe;
+  border-color: #7aa4da;
 }
 
 .buttonRow {
-  display flex;
-  flex-wrap wrap;
-  gap 10px;
-  margin-top 4px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 4px;
 }
 
 button {
-  padding 11px 18px;
-  border none;
-  border-radius 10px;
-  cursor pointer;
-  font-weight 600;
-  font-family inherit;
-  transition transform 0.15s ease, box-shadow 0.15s ease, opacity 0.2s ease;
+  padding: 11px 18px;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  font-weight: 600;
+  font-family: inherit;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, opacity 0.2s ease;
 }
 
-buttonhover {
-  transform translateY(-1px);
+button:hover {
+  transform: translateY(-1px);
 }
 
-buttonactive {
-  transform translateY(0);
+button:active {
+  transform: translateY(0);
 }
 
 button.primary {
-  background var(--primary);
-  color #fff;
-  box-shadow 0 8px 18px rgba(23, 55, 94, 0.3);
+  background: var(--primary);
+  color: #fff;
+  box-shadow: 0 8px 18px rgba(23, 55, 94, 0.3);
 }
 
 button.secondary {
-  background #e7eef8;
-  color var(--primary-strong);
+  background: #e7eef8;
+  color: var(--primary-strong);
 }
 
 .pipelineTitle {
-  margin 0 0 14px;
-  font-size 1.05rem;
-  color var(--primary-strong);
+  margin: 0 0 14px;
+  font-size: 1.05rem;
+  color: var(--primary-strong);
 }
 
 .pipelineList {
-  margin 0;
-  padding 0;
-  list-style none;
-  display grid;
-  gap 11px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 11px;
 }
 
 .pipelineItem {
-  padding 11px 12px;
-  border 1px solid #e1e8f2;
-  border-radius 10px;
-  background var(--surface-alt);
-  font-size 0.9rem;
-  color #1e293b;
+  padding: 11px 12px;
+  border: 1px solid #e1e8f2;
+  border-radius: 10px;
+  background: var(--surface-alt);
+  font-size: 0.9rem;
+  color: #1e293b;
 }
 
 .report {
-  padding 26px;
-  margin-top 20px;
+  padding: 26px;
+  margin-top: 20px;
 }
 
 .header {
-  border-bottom 2px solid #e3ebf5;
-  margin-bottom 20px;
-  padding-bottom 14px;
+  border-bottom: 2px solid #e3ebf5;
+  margin-bottom: 20px;
+  padding-bottom: 14px;
 }
 
 .header h2 {
-  margin 0;
-  font-size 1.3rem;
-  color var(--primary-strong);
+  margin: 0;
+  font-size: 1.3rem;
+  color: var(--primary-strong);
 }
 
 .meta {
-  margin-top 10px;
-  color var(--text-muted);
-  font-size 0.92rem;
-  line-height 1.5;
+  margin-top: 10px;
+  color: var(--text-muted);
+  font-size: 0.92rem;
+  line-height: 1.5;
 }
 
 .risk {
-  padding 16px;
-  margin-top 18px;
-  font-weight 700;
-  border-left 6px solid;
-  border-radius 10px;
-  font-size 0.95rem;
+  padding: 16px;
+  margin-top: 18px;
+  font-weight: 700;
+  border-left: 6px solid;
+  border-radius: 10px;
+  font-size: 0.95rem;
 }
 
 .green {
-  background #ecfdf5;
-  border-color #059669;
-  color #065f46;
+  background: #ecfdf5;
+  border-color: #059669;
+  color: #065f46;
 }
 
 .yellow {
-  background #fffbeb;
-  border-color #d97706;
-  color #92400e;
+  background: #fffbeb;
+  border-color: #d97706;
+  color: #92400e;
 }
 
 .red {
-  background #fef2f2;
-  border-color #dc2626;
-  color #991b1b;
+  background: #fef2f2;
+  border-color: #dc2626;
+  color: #991b1b;
 }
 
 #sections {
-  display grid;
-  gap 14px;
-  margin-top 14px;
+  display: grid;
+  gap: 14px;
+  margin-top: 14px;
 }
 
 .section {
-  padding 16px 18px;
-  background var(--surface-alt);
-  border 1px solid #e1e8f2;
-  border-radius 12px;
+  padding: 16px 18px;
+  background: var(--surface-alt);
+  border: 1px solid #e1e8f2;
+  border-radius: 12px;
 }
 
 .sectionHead {
-  display flex;
-  align-items center;
-  gap 10px;
-  margin-bottom 8px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
 }
 
 .sectionIcon {
-  width 28px;
-  height 28px;
-  border-radius 8px;
-  background #dce8f7;
-  display grid;
-  place-items center;
-  font-size 15px;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: #dce8f7;
+  display: grid;
+  place-items: center;
+  font-size: 15px;
 }
 
 .sectionTitle {
-  margin 0;
-  font-size 0.98rem;
-  color var(--primary);
-  font-weight 700;
+  margin: 0;
+  font-size: 0.98rem;
+  color: var(--primary);
+  font-weight: 700;
 }
 
 .sectionBody {
-  margin 0;
-  white-space pre-wrap;
-  font-family inherit;
-  color #1e293b;
-  line-height 1.55;
-  font-size 0.92rem;
+  margin: 0;
+  white-space: pre-wrap;
+  font-family: inherit;
+  color: #1e293b;
+  line-height: 1.55;
+  font-size: 0.92rem;
 }
 
 .footer {
-  margin-top 24px;
-  padding-top 12px;
-  border-top 1px solid #e4eaf3;
-  font-size 12px;
-  color #64748b;
-  text-align center;
+  margin-top: 24px;
+  padding-top: 12px;
+  border-top: 1px solid #e4eaf3;
+  font-size: 12px;
+  color: #64748b;
+  text-align: center;
 }
 
-@media (max-width 960px) {
+@media (max-width: 960px) {
   .workspaceGrid {
-    grid-template-columns 1fr;
+    grid-template-columns: 1fr;
   }
 
   .pipelineCard {
-    order 2;
+    order: 2;
   }
 }
 
-@media (max-width 860px) {
+@media (max-width: 860px) {
   .topBarInner {
-    flex-direction column;
-    align-items flex-start;
+    flex-direction: column;
+    align-items: flex-start;
   }
 
   .topBarMeta {
-    text-align left;
+    text-align: left;
   }
 
   .statusPill {
-    align-self flex-start;
+    align-self: flex-start;
   }
 
   .inputRow {
-    grid-template-columns 1fr;
+    grid-template-columns: 1fr;
   }
 
   .formCard,
   .pipelineCard,
   .report {
-    padding 18px;
+    padding: 18px;
   }
 
   .page {
-    padding 0 14px 28px;
+    padding: 0 14px 28px;
   }
 }
-style
-head
+</style>
+</head>
 
-body
-div class=topBar
-  div class=topBarInner
-    div class=brand
-      div class=brandMark🛡️div
-      div
-        p class=brandTitleEnterprise Investigation Consolep
-        p class=brandSubAI-Enabled Forensic Due Diligencep
-      div
-    div
-    div class=topBarMeta
-      p class=projectByProject by Govindp
-      div class=statusPillPublic Source Intelligence Workflowdiv
-    div
-  div
-div
+<body>
+<div class="topBar">
+  <div class="topBarInner">
+    <div class="brand">
+      <div class="brandMark">🛡️</div>
+      <div>
+        <p class="brandTitle">Enterprise Investigation Console</p>
+        <p class="brandSub">AI-Enabled Forensic Due Diligence</p>
+      </div>
+    </div>
+    <div class="topBarMeta">
+      <p class="projectBy">Project by Govind</p>
+      <div class="statusPill">Public Source Intelligence Workflow</div>
+    </div>
+  </div>
+</div>
 
-div class=page
-  h2 class=heroTitleEnterprise Risk Intelligence Consoleh2
-  p class=heroSubtitleAI-Powered Corporate Investigation Systemp
+<div class="page">
+  <h2 class="heroTitle">AI Forensic Intelligence Platform</h2>
+  <p class="heroSubtitle">Corporate Risk Screening &amp; Compliance Analysis</p>
 
-  div class=workspaceGrid
-    div class=formCard
-      h3 class=formHeadingForensic Due Diligence Investigationh3
-      p class=formDescGenerate structured forensic due diligence reports using global compliance datasets, sanctions intelligence, ownership analysis, and AI-driven risk classification.p
+  <div class="workspaceGrid">
+    <div class="formCard">
+      <h3 class="formHeading">Forensic Due Diligence Investigation</h3>
+      <p class="formDesc">Run automated corporate screening and generate structured risk intelligence reports.</p>
 
-      div class=inputRow
-        input type=text id=companyName placeholder=Company Name 
-        input type=text id=country placeholder=Country 
-      div
+      <div class="inputRow">
+        <input type="text" id="companyName" placeholder="Company Name" />
+        <input type="text" id="country" placeholder="Country" />
+      </div>
 
-      input type=text id=website placeholder=Website 
+      <input type="text" id="website" placeholder="Website" />
 
-      div class=buttonRow
-        button class=primary onclick=run()Run Investigationbutton
-        button class=secondary onclick=downloadPDF()Download PDFbutton
-      div
-    div
+      <div class="buttonRow">
+        <button class="primary" onclick="run()">Run Investigation</button>
+        <button class="secondary" onclick="downloadPDF()">Download PDF</button>
+      </div>
+    </div>
 
-    aside class=pipelineCard
-      h3 class=pipelineTitleInvestigation Pipelineh3
-      ul class=pipelineList
-        li class=pipelineItem✓ Corporate Registry Verificationli
-        li class=pipelineItem✓ Business Identity Validationli
-        li class=pipelineItem✓ Domain &amp; Infrastructure Intelligenceli
-        li class=pipelineItem✓ Sanctions &amp; Global Watchlist Screeningli
-        li class=pipelineItem✓ Politically Exposed Person (PEP) Screeningli
-        li class=pipelineItem✓ Offshore Ownership Screeningli
-        li class=pipelineItem✓ Corporate Network Relationship Analysisli
-        li class=pipelineItem✓ Adverse Media Intelligenceli
-        li class=pipelineItem✓ Legal &amp; Regulatory Record Reviewli
-        li class=pipelineItem✓ Address &amp; Location Verificationli
-        li class=pipelineItem✓ Knowledge Graph &amp; Public Records Checkli
-        li class=pipelineItem✓ Corporate Reputation Analysisli
-        li class=pipelineItem✓ AI Risk Classification Engineli
-      ul
+    <aside class="pipelineCard">
+      <h3 class="pipelineTitle">Investigation Pipeline</h3>
+      <ul class="pipelineList">
+        <li class="pipelineItem">✓ Corporate Registry Verification</li>
+        <li class="pipelineItem">✓ Sanctions Screening (OpenSanctions)</li>
+        <li class="pipelineItem">✓ Offshore Ownership Screening (ICIJ Offshore Leaks)</li>
+        <li class="pipelineItem">✓ Adverse Media Intelligence</li>
+        <li class="pipelineItem">✓ Address Verification</li>
+        <li class="pipelineItem">✓ Regulatory Compliance Check</li>
+        <li class="pipelineItem">✓ AI Risk Analysis Engine</li>
+      </ul>
+    </aside>
+  </div>
 
-    aside
-  div
+  <div id="report" class="report" style="display:none">
+    <div class="header">
+      <h2>Forensic Due Diligence Report</h2>
+      <div class="meta" id="meta"></div>
+    </div>
 
-  div id=report class=report style=displaynone
-    div class=header
-      h2Forensic Due Diligence Reporth2
-      div class=meta id=metadiv
-    div
+    <div id="riskBox"></div>
 
-    div id=riskBoxdiv
+    <div id="sections"></div>
 
-    div id=sectionsdiv
-
-    div class=footer
+    <div class="footer">
       Created by Govind • Enterprise AI Compliance Platform
-    div
-  div
-div
+    </div>
+  </div>
+</div>
 
-script
+<script>
 async function run(){
 
-  document.getElementById(report).style.display=block;
-  document.getElementById(sections).innerHTML=Running investigation...;
+  document.getElementById("report").style.display="block";
+  document.getElementById("sections").innerHTML="Running investigation...";
 
-  const name=document.getElementById(companyName).value;
-  const country=document.getElementById(country).value;
-  const website=document.getElementById(website).value;
+  const name=document.getElementById("companyName").value;
+  const country=document.getElementById("country").value;
+  const website=document.getElementById("website").value;
 
-  const res=await fetch(apiforensic,{
-    methodPOST,
-    headers{Content-Typeapplicationjson},
-    bodyJSON.stringify({
-      prompt
-      Create a structured forensic due diligence report for +name+
-      . Country +country+
-      . Website +website+
-      . Use sections Company Overview, Ownership & Management, Address Verification, Offshore Ownership Screening, Media & Reputation, Legal & Regulatory Issues, Sanctions Screening, Risk Conclusion. Use at most 2 citations per sentence, preferring 1 when possible. End with FLAG GREEN or FLAG YELLOW or FLAG RED.
+  const res=await fetch("/api/forensic",{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({
+      prompt:
+      "Create a structured forensic due diligence report for "+name+
+      ". Country: "+country+
+      ". Website: "+website+
+      ". Use sections: Company Overview, Ownership & Management, Address Verification, Offshore Ownership Screening, Media & Reputation, Legal & Regulatory Issues, Sanctions Screening, Risk Conclusion. Use at most 2 citations per sentence, preferring 1 when possible. End with FLAG: GREEN or FLAG: YELLOW or FLAG: RED."
     })
   });
 
   const data=await res.json();
-  const text=data.result  ;
+  const text=data.result || "";
 
   buildReport(name,country,website,text);
 }
@@ -493,143 +486,143 @@ function buildReport(name,country,website,text){
 
   const today=new Date().toLocaleDateString();
 
-  document.getElementById(meta).innerHTML=
-  bCompanyb +name+
-  brbCountryb +country+
-  brbWebsiteb +website+
-  brbDateb +today+
-  brbScreening Typeb AI Public Source Due Diligence;
+  document.getElementById("meta").innerHTML=
+  "<b>Company:</b> "+name+
+  "<br><b>Country:</b> "+country+
+  "<br><b>Website:</b> "+website+
+  "<br><b>Date:</b> "+today+
+  "<br><b>Screening Type:</b> AI Public Source Due Diligence";
 
-  let flag=GREEN;
-  let riskClass=green;
-  let label=LOW RISK;
+  let flag="GREEN";
+  let riskClass="green";
+  let label="LOW RISK";
 
-  if(text.includes(FLAG RED)){
-    flag=RED;
-    riskClass=red;
-    label=HIGH RISK;
+  if(text.includes("FLAG: RED")){
+    flag="RED";
+    riskClass="red";
+    label="HIGH RISK";
   }
-  else if(text.includes(FLAG YELLOW)){
-    flag=YELLOW;
-    riskClass=yellow;
-    label=MEDIUM RISK;
+  else if(text.includes("FLAG: YELLOW")){
+    flag="YELLOW";
+    riskClass="yellow";
+    label="MEDIUM RISK";
   }
 
-  document.getElementById(riskBox).innerHTML=
-  'div class=risk '+riskClass+''+
-  'Overall Risk Assessment '+label+' ('+flag+')'+
-  'div';
+  document.getElementById("riskBox").innerHTML=
+  '<div class="risk '+riskClass+'">'+
+  'Overall Risk Assessment: '+label+' ('+flag+')'+
+  '</div>';
 
   const parsedSections=parseReportSections(text);
 
-  let html=;
+  let html="";
 
-  parsedSections.forEach(section={
-    if(section.body.length0){
-      html+='div class=section'+
-        'div class=sectionHead'+
-          'div class=sectionIcon'+getSectionIcon(section.title)+'div'+
-          'h3 class=sectionTitle'+section.title+'h3'+
-        'div'+
-        'div class=sectionBody'+renderSectionBody(section.body)+'div'+
-      'div';
+  parsedSections.forEach(section=>{
+    if(section.body.length>0){
+      html+='<div class="section">'+
+        '<div class="sectionHead">'+
+          '<div class="sectionIcon">'+getSectionIcon(section.title)+'</div>'+
+          '<h3 class="sectionTitle">'+section.title+'</h3>'+
+        '</div>'+
+        '<div class="sectionBody">'+renderSectionBody(section.body)+'</div>'+
+      '</div>';
     }
   });
 
-  document.getElementById(sections).innerHTML=html  renderRawReport(text);
+  document.getElementById("sections").innerHTML=html || renderRawReport(text);
 }
 
 function parseReportSections(text){
   const sectionTitles=[
-    Company Overview,
-    Ownership & Management,
-    Address Verification,
-    Offshore Ownership Screening,
-    Media & Reputation,
-    Legal & Regulatory Issues,
-    Sanctions Screening,
-    Risk Conclusion
+    "Company Overview",
+    "Ownership & Management",
+    "Address Verification",
+    "Offshore Ownership Screening",
+    "Media & Reputation",
+    "Legal & Regulatory Issues",
+    "Sanctions Screening",
+    "Risk Conclusion"
   ];
 
-  const normalized=text  ;
+  const normalized=text || "";
   const matches=[];
 
-  sectionTitles.forEach(title={
-    const escapedTitle=title.replace([.+^${}()[]]g,$&).replace(s+&s+g,s&s);
-    const regex=new RegExp((^n)s(#{1,3}ss)+escapedTitle+(s)s,i);
+  sectionTitles.forEach(title=>{
+    const escapedTitle=title.replace(/[.*+?^${}()|[\]\\]/g,"\\$&").replace(/\s+&\s+/g,"\\s*&\\s*");
+    const regex=new RegExp("(?:^|\\n)\\s*(?:#{1,3}\\s*|\\*\\*\\s*)?"+escapedTitle+"(?:\\s*\\*\\*)?\\s*:?","i");
     const match=regex.exec(normalized);
 
     if(match){
-      matches.push({title,startmatch.index,endmatch.index+match[0].length});
+      matches.push({title,start:match.index,end:match.index+match[0].length});
     }
   });
 
-  matches.sort((a,b)=a.start-b.start);
+  matches.sort((a,b)=>a.start-b.start);
 
-  return matches.map((section,index)={
+  return matches.map((section,index)=>{
     const nextSection=matches[index+1];
-    const body=normalized.slice(section.end,nextSection  nextSection.start  normalized.length).trim();
+    const body=normalized.slice(section.end,nextSection ? nextSection.start : normalized.length).trim();
 
-    return {titlesection.title,body};
+    return {title:section.title,body};
   });
 }
 
 
 function renderSectionBody(value){
-  const safe=escapeHtml(value  );
+  const safe=escapeHtml(value || "");
 
-  return safe.replace((^n)s#{1,3}s+([^n]+)g,(match,prefix,title)={
-    return `${prefix}h3${title.trim()}h3`;
+  return safe.replace(/(^|\n)\s*#{1,3}\s+([^\n]+)/g,(match,prefix,title)=>{
+    return `${prefix}<h3>${title.trim()}</h3>`;
   });
 }
 
 function renderRawReport(text){
-  const safeText=escapeHtml((text  ).trim()  No report content returned.);
+  const safeText=escapeHtml((text || "").trim() || "No report content returned.");
 
-  return 'div class=section'+
-    'div class=sectionHead'+
-      'div class=sectionIcon📄div'+
-      'h3 class=sectionTitleInvestigation Reporth3'+
-    'div'+
-    'div class=sectionBody'+renderSectionBody(safeText)+'div'+
-  'div';
+  return '<div class="section">'+
+    '<div class="sectionHead">'+
+      '<div class="sectionIcon">📄</div>'+
+      '<h3 class="sectionTitle">Investigation Report</h3>'+
+    '</div>'+
+    '<div class="sectionBody">'+renderSectionBody(safeText)+'</div>'+
+  '</div>';
 }
 
 function escapeHtml(value){
-  return (value  )
-    .replace(&g,&amp;)
-    .replace(g,&lt;)
-    .replace(g,&gt;)
-    .replace(g,&quot;)
-    .replace('g,&#39;);
+  return (value || "")
+    .replace(/&/g,"&amp;")
+    .replace(/</g,"&lt;")
+    .replace(/>/g,"&gt;")
+    .replace(/"/g,"&quot;")
+    .replace(/'/g,"&#39;");
 }
 
 function getSectionIcon(title){
-  const t=(title  ).toLowerCase();
+  const t=(title || "").toLowerCase();
 
-  if(t.includes(overview)) return 🏢;
-  if(t.includes(ownership)  t.includes(management)) return 👥;
-  if(t.includes(address)) return 📍;
-  if(t.includes(offshore)) return 🌐;
-  if(t.includes(media)  t.includes(reputation)) return 📰;
-  if(t.includes(legal)  t.includes(regulatory)) return ⚖️;
-  if(t.includes(sanctions)) return 🚫;
-  if(t.includes(risk)  t.includes(conclusion)) return 📊;
+  if(t.includes("overview")) return "🏢";
+  if(t.includes("ownership") || t.includes("management")) return "👥";
+  if(t.includes("address")) return "📍";
+  if(t.includes("offshore")) return "🌐";
+  if(t.includes("media") || t.includes("reputation")) return "📰";
+  if(t.includes("legal") || t.includes("regulatory")) return "⚖️";
+  if(t.includes("sanctions")) return "🚫";
+  if(t.includes("risk") || t.includes("conclusion")) return "📊";
 
-  return 📁;
+  return "📁";
 }
 
 function downloadPDF(){
-  const element=document.getElementById(report);
+  const element=document.getElementById("report");
 
   html2pdf().set({
-    margin0.5,
-    filename'AI_Forensic_DD_Report.pdf',
-    html2canvas{scale2},
-    jsPDF{unit'in',format'a4',orientation'portrait'}
+    margin:0.5,
+    filename:'AI_Forensic_DD_Report.pdf',
+    html2canvas:{scale:2},
+    jsPDF:{unit:'in',format:'a4',orientation:'portrait'}
   }).from(element).save();
 }
-script
+</script>
 
-body
-html
+</body>
+</html>
