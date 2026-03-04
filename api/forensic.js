@@ -53,10 +53,17 @@ function normalizeSourcesAtEnd(report = "") {
   const normalizedSources = [
     "Sources",
     "",
-    ...parsedUrls.map((source) => `[${source.number}] <a href="${source.url}" target="_blank" rel="noopener noreferrer">${source.url}</a>`)
+    ...parsedUrls.map((source) => `[${source.number}] ${source.url}`)
   ].join("\n");
 
   return [body, normalizedSources].filter(Boolean).join("\n\n");
+}
+
+function limitInlineCitations(report = "") {
+  return String(report || "").replace(/(?:\[(\d+)\]){3,}/g, (match) => {
+    const citations = [...match.matchAll(/\[(\d+)\]/g)].map((entry) => entry[0]);
+    return citations.slice(0, 2).join("");
+  });
 }
 
 async function getSanctionsScreening(company) {
@@ -220,6 +227,8 @@ export default async function handler(req, res) {
       "If information is limited, provide the most likely publicly available details rather than stating 'no data available'.",
       "",
       "Keep citation markers [1], [2], etc in the report text as used.",
+      "Use a maximum of 2 citations per sentence.",
+      "Prefer one citation when possible, and never produce citation chains like [1][2][3].",
       "Add a Sources section ONLY at the end of the report, AFTER Risk Conclusion, in this exact format:",
       "Sources",
       "",
@@ -258,9 +267,10 @@ export default async function handler(req, res) {
 
     const data = await response.json();
     const modelResult = data.choices?.[0]?.message?.content || "";
+    const citationLimitedResult = limitInlineCitations(modelResult);
 
     res.status(200).json({
-      result: normalizeSourcesAtEnd(modelResult)
+      result: normalizeSourcesAtEnd(citationLimitedResult)
     });
   } catch (err) {
     res.status(500).json({ error: err.message });
