@@ -2,12 +2,37 @@ const OPEN_SANCTIONS_ENDPOINT = "https://api.opensanctions.org/match/default";
 const OFFSHORE_LEAKS_ENDPOINT = "https://offshoreleaks.icij.org/api/v1/reconcile";
 const PERPLEXITY_ENDPOINT = "https://api.perplexity.ai/chat/completions";
 
+function escapeHtml(value = "") {
+  return String(value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/\"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function isValidHttpUrl(value = "") {
+  if (!value) return false;
+
+  try {
+    const parsed = new URL(value);
+    return parsed.protocol === "http:" || parsed.protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
+function formatSourceAsClickableLink(number, url) {
+  const safeUrl = escapeHtml(url);
+  return `[${number}] <a href="${safeUrl}" target="_blank" rel="noopener noreferrer">${safeUrl}</a>`;
+}
+
 function formatReportWithSources(report = "") {
   const raw = String(report || "").trim();
 
   if (!raw) return "";
 
-  const sourcesHeadingRegex = /\n\s*(?:#{2,3}\s*|\*\*\s*)?sources(?:\s*\*\*)?\s*:\s*\n?/i;
+  const sourcesHeadingRegex = /\n\s*(?:#{2,3}\s*|\*\*\s*)?sources(?:\s*\*\*)?\s*:?\s*\n?/i;
   const headingMatch = sourcesHeadingRegex.exec(raw);
 
   if (!headingMatch) {
@@ -26,13 +51,21 @@ function formatReportWithSources(report = "") {
 
   const parsedSources = sourceLines
     .map((line) => {
-      const match = line.match(/^\[(\d+)\]\s+(.+)$/);
+      const sourceMatch = line.match(/^\[(\d+)\]\s+(.+)$/);
+      if (!sourceMatch) return null;
 
-      if (!match) return null;
+      const sourceNumber = Number(sourceMatch[1]);
+      const remainder = sourceMatch[2].trim();
+      const urlMatch = remainder.match(/https?:\/\/[^\s)\]>"']+/i);
+      const url = urlMatch?.[0]?.trim() || "";
+
+      if (!isValidHttpUrl(url)) {
+        return null;
+      }
 
       return {
-        originalNumber: Number(match[1]),
-        text: match[2].trim()
+        originalNumber: sourceNumber,
+        url
       };
     })
     .filter(Boolean);
@@ -48,7 +81,7 @@ function formatReportWithSources(report = "") {
 
     return {
       number: newNumber,
-      text: source.text
+      url: source.url
     };
   });
 
@@ -62,7 +95,7 @@ function formatReportWithSources(report = "") {
 
   const sourcesSection = [
     "Sources:",
-    ...normalizedSources.map((source) => `[${source.number}] ${source.text}`)
+    ...normalizedSources.map((source) => formatSourceAsClickableLink(source.number, source.url))
   ].join("\n");
 
   return [normalizedBody, sourcesSection].filter(Boolean).join("\n\n");
@@ -210,15 +243,17 @@ export default async function handler(req, res) {
       offshoreResult,
       "",
       "Include a dedicated report section titled 'Offshore Ownership Screening' based on the offshore screening result above.",
-      "Use bracket citations in the report body only when a source is available, e.g. [1], [2].",
-      "Always end the report with a section titled 'Sources:' and list every citation used in the body.",
+      "Every citation [1], [2], etc must correspond to a real URL.",
+      "At the end of the report include a 'Sources' section listing the exact links used.",
+      "Do not output generic labels like 'business directories'. Always provide the full URL.",
+      "Ensure the Sources section appears after the Risk Conclusion section.",
+      "If a source URL is unavailable, remove the citation number from the report text.",
       "Format the sources section exactly as numbered lines like:",
-      "[1] Company official website",
-      "[2] Government corporate registry",
-      "[3] Business directories or listings",
-      "[4] Public media sources",
-      "Ensure citation numbers in the report body exactly match the listed source numbers.",
-      "If reliable sources are unavailable, do not add citations and do not output a Sources section."
+      "Sources:",
+      "[1] https://example.com",
+      "[2] https://example.com",
+      "[3] https://example.com",
+      "Ensure citation numbers in the report body exactly match the listed source numbers."
     ].join("\n\n");
 
     const response = await fetch(PERPLEXITY_ENDPOINT, {
@@ -239,7 +274,6 @@ export default async function handler(req, res) {
     });
 
     const data = await response.json();
-
     const modelResult = data.choices?.[0]?.message?.content || "";
 
     res.status(200).json({
