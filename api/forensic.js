@@ -1,6 +1,7 @@
 const OPEN_SANCTIONS_ENDPOINT = "https://api.opensanctions.org/match/default";
 const OFFSHORE_LEAKS_ENDPOINT = "https://offshoreleaks.icij.org/api/v1/reconcile";
 const PERPLEXITY_ENDPOINT = "https://api.perplexity.ai/chat/completions";
+const { collectEvidence } = require("./evidence");
 
 function extractCompanyFromPrompt(prompt = "") {
   const match = prompt.match(/report for\s+(.+?)\.\s+country:/i);
@@ -198,6 +199,13 @@ export default async function handler(req, res) {
 
     const sanctionsResult = await getSanctionsScreening(company);
     const offshoreResult = await getOffshoreScreening(company);
+    const evidence = await collectEvidence(company, website);
+    const evidenceBlock = evidence
+      .map((e, i) => `[${i + 1}] ${e.url}\n${e.snippet}`)
+      .join("\n\n");
+    const evidenceSourcesList = evidence
+      .map((e, i) => `[${i + 1}] ${e.url}`)
+      .join("\n");
 
     const promptWithScreening = [
       "You are a forensic due diligence analyst.",
@@ -226,16 +234,26 @@ export default async function handler(req, res) {
       "",
       "If information is limited, provide the most likely publicly available details rather than stating 'no data available'.",
       "",
+      "You must ONLY use the evidence sources listed below.",
+      "Never invent sources.",
+      "Never fabricate URLs.",
+      "Never cite numbers higher than the evidence list.",
+      "If information is not supported by the evidence, do not cite it.",
+      "",
+      "Analyze the following evidence and produce a forensic due diligence report.",
+      "",
+      "Evidence sources:",
+      evidenceBlock || "No evidence sources found.",
+      "",
       "Keep citation markers [1], [2], etc in the report text as used.",
       "Use a maximum of 2 citations per sentence.",
       "Prefer one citation when possible, and never produce citation chains like [1][2][3].",
       "Add a Sources section ONLY at the end of the report, AFTER Risk Conclusion, in this exact format:",
       "Sources",
       "",
-      "[1] https://example.com",
-      "[2] https://example.com",
-      "[3] https://example.com",
-      "Only include real URLs in Sources.",
+      evidenceSourcesList || "[1] https://example.com",
+      "Plain URLs only. Do not include HTML anchor tags.",
+      "Only include the exact URLs from the evidence list in Sources.",
       "",
       "Incorporate the screening findings below into the relevant sections:",
       sanctionsResult,
