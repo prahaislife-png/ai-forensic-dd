@@ -53,7 +53,7 @@ function normalizeSourcesAtEnd(report = "") {
   const normalizedSources = [
     "Sources",
     "",
-    ...parsedUrls.map((source) => `[${source.number}] ${source.url}`)
+    ...parsedUrls.map((source) => `[${source.number}] <a href="${source.url}" target="_blank" rel="noopener noreferrer">${source.url}</a>`)
   ].join("\n");
 
   return [body, normalizedSources].filter(Boolean).join("\n\n");
@@ -220,9 +220,6 @@ export default async function handler(req, res) {
       "If information is limited, provide the most likely publicly available details rather than stating 'no data available'.",
       "",
       "Keep citation markers [1], [2], etc in the report text as used.",
-      "Each factual statement should cite a maximum of 2 sources.",
-      "Do NOT produce citation chains like [1][2][3][4][5].",
-      "Prefer using 1 citation per statement when possible.",
       "Add a Sources section ONLY at the end of the report, AFTER Risk Conclusion, in this exact format:",
       "Sources",
       "",
