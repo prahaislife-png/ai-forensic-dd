@@ -52,25 +52,10 @@ function normalizeSourcesAtEnd(report = "") {
     return body;
   }
 
-  const isValidUrl = (value) => {
-    try {
-      const parsed = new URL(value);
-      return parsed.protocol === "http:" || parsed.protocol === "https:";
-    } catch {
-      return false;
-    }
-  };
-
   const normalizedSources = [
     "Sources",
     "",
-    ...parsedUrls.map((source) => {
-      if (!isValidUrl(source.url)) {
-        return `[${source.number}] ${source.url}`;
-      }
-
-      return `[${source.number}] <a href="${source.url}" target="_blank" rel="noopener noreferrer">${source.url}</a>`;
-    })
+    ...parsedUrls.map((source) => `[${source.number}] ${source.url}`)
   ].join("\n");
 
   return [body, normalizedSources].filter(Boolean).join("\n\n");
@@ -263,23 +248,17 @@ export default async function handler(req, res) {
       "Media & Reputation",
       "Legal & Regulatory Issues",
       "Sanctions Screening",
-      "Risk Breakdown",
       "Risk Conclusion",
       "",
+      "The AI must NOT assign risk levels such as LOW, MEDIUM, or HIGH.",
       "The AI should only describe factual findings and observations.",
-      "Final risk classification is handled by system logic, except for the required Risk Breakdown table.",
-      "For Risk Breakdown, use only LOW, MEDIUM, or HIGH labels.",
-      "Do not invent additional risk categories.",
+      "Final risk classification is handled by system logic.",
       "",
       "You must ONLY use the evidence sources listed below.",
       "Every factual claim must reference at least one evidence citation.",
       "Do NOT make assumptions or interpretations beyond the evidence.",
       "If evidence is insufficient for any claim, state: \"No verifiable evidence found in available sources.\"",
       "Risk conclusions must be based only on the provided evidence.",
-      "Business directories (including ZoomInfo, Clutch, RocketReach, and other business listings) are not verified financial disclosures.",
-      "Do not present directory estimates as confirmed revenue or financial facts.",
-      "Directory sources may only support profile details such as employee estimates, services, and company descriptions.",
-      "If financial disclosures cannot be verified, state exactly: \"No verifiable financial disclosures were identified in the available evidence sources.\"",
       "Never invent sources.",
       "Never fabricate URLs.",
       "Never cite numbers higher than the evidence list.",
@@ -293,19 +272,11 @@ export default async function handler(req, res) {
       "Keep citation markers [1], [2], etc in the report text as used.",
       "Use a maximum of 2 citations per sentence.",
       "Prefer one citation when possible, and never produce citation chains like [1][2][3].",
-      "Add a Risk Breakdown section directly before Risk Conclusion using this exact category order:",
-      "Corporate Registration      LOW",
-      "Ownership Transparency      LOW",
-      "Offshore Ownership          MEDIUM",
-      "Sanctions Screening         LOW",
-      "Media Reputation            LOW",
-      "Legal / Regulatory Issues   LOW",
-      "Use only LOW / MEDIUM / HIGH values in Risk Breakdown and base them strictly on evidence.",
       "Add a Sources section ONLY at the end of the report, AFTER Risk Conclusion, in this exact format:",
       "Sources",
       "",
       evidenceSourcesList || "[1] https://example.com",
-      "Render each source URL as a clickable HTML anchor in this exact pattern: [n] <a href=\"URL\" target=\"_blank\" rel=\"noopener noreferrer\">URL</a>",
+      "Plain URLs only. Do not include HTML anchor tags.",
       "Only include the exact URLs from the evidence list in Sources.",
       "",
       "Incorporate the screening findings below into the relevant sections:",
