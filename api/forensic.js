@@ -2,6 +2,7 @@ const OPEN_SANCTIONS_ENDPOINT = "https://api.opensanctions.org/match/default";
 const OFFSHORE_LEAKS_ENDPOINT = "https://offshoreleaks.icij.org/api/v1/reconcile";
 const PERPLEXITY_ENDPOINT = "https://api.perplexity.ai/chat/completions";
 const { collectEvidence } = require("./evidence");
+const { collectAdditionalIntelligence } = require("./intelligence");
 
 function extractCompanyFromPrompt(prompt = "") {
   const match = prompt.match(/report for\s+(.+?)\.\s+country:/i);
@@ -309,9 +310,33 @@ export default async function handler(req, res) {
     const data = await response.json();
     const modelResult = data.choices?.[0]?.message?.content || "";
     const citationLimitedResult = limitInlineCitations(modelResult);
+    const normalizedReport = normalizeSourcesAtEnd(citationLimitedResult);
+
+    const intel = await collectAdditionalIntelligence(company, website);
+
+    const additionalSections = [
+      "GLOBAL MEDIA INTELLIGENCE",
+      "",
+      intel.media?.summary || "No adverse global media coverage associated with the company or its leadership was identified in monitored news sources.",
+      "",
+      "DOMAIN INTELLIGENCE",
+      "",
+      `Domain: ${intel.domain?.domain || "N/A"}`,
+      `Registered: ${intel.domain?.registeredYear || "Unknown"}`,
+      `Registrar: ${intel.domain?.registrar || "Unknown"}`,
+      `Status: ${intel.domain?.status || "Unknown"}`,
+      "",
+      "PUBLIC KNOWLEDGE GRAPH",
+      "",
+      intel.knowledge?.summary || "No verified Wikipedia or Wikidata entity was identified for the company in publicly indexed knowledge graphs.",
+      "",
+      "CORPORATE NETWORK ANALYSIS",
+      "",
+      intel.network?.summary || "No high-risk ownership links or sanctioned entities were identified within the corporate relationship network."
+    ].join("\n");
 
     res.status(200).json({
-      result: normalizeSourcesAtEnd(citationLimitedResult)
+      result: [normalizedReport, additionalSections].filter(Boolean).join("\n\n")
     });
   } catch (err) {
     res.status(500).json({ error: err.message });
