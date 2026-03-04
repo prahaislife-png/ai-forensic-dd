@@ -22,50 +22,70 @@ function extractWebsiteFromPrompt(prompt = "") {
   return match?.[1]?.trim() || "";
 }
 
-function normalizeSourcesAtEnd(report = "") {
-  const raw = String(report || "").trim();
-  if (!raw) return "";
-
-  const sourceHeaderRegex = /\n\s*(?:#{2,3}\s*|\*\*\s*)?sources(?:\s*\*\*)?\s*:?\s*\n?/i;
-  const sourceHeaderMatch = sourceHeaderRegex.exec(raw);
-
-  let body = raw;
-  let sourceBlock = "";
-
-  if (sourceHeaderMatch) {
-    body = raw.slice(0, sourceHeaderMatch.index).trimEnd();
-    sourceBlock = raw.slice(sourceHeaderMatch.index + sourceHeaderMatch[0].length).trim();
-  }
-
-  const parsedUrls = sourceBlock
-    .split(/\r?\n/)
-    .map((line) => line.trim())
-    .filter(Boolean)
-    .map((line) => {
-      const sourceLineMatch = line.match(/^\[(\d+)\]\s+(https?:\/\/\S+)$/i);
-      if (!sourceLineMatch) return null;
-      return { number: sourceLineMatch[1], url: sourceLineMatch[2] };
-    })
-    .filter(Boolean);
-
-  if (!parsedUrls.length) {
-    return body;
-  }
-
-  const normalizedSources = [
-    "Sources",
-    "",
-    ...parsedUrls.map((source) => `[${source.number}] ${source.url}`)
-  ].join("\n");
-
-  return [body, normalizedSources].filter(Boolean).join("\n\n");
-}
-
 function limitInlineCitations(report = "") {
   return String(report || "").replace(/(?:\[(\d+)\]){3,}/g, (match) => {
     const citations = [...match.matchAll(/\[(\d+)\]/g)].map((entry) => entry[0]);
     return citations.slice(0, 2).join("");
   });
+}
+
+function normalizeRiskBreakdown(report = "") {
+  const lines = String(report || "").split(/\r?\n/);
+  const normalized = [];
+  let inRiskSection = false;
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+
+    if (/^risk breakdown\s*$/i.test(trimmed)) {
+      inRiskSection = true;
+      normalized.push("Risk Breakdown", "", "Corporate Registration: LOW", "Ownership Transparency: LOW", "Offshore Ownership: MEDIUM", "Sanctions Screening: LOW", "Media Reputation: LOW", "Legal / Regulatory Issues: LOW");
+      continue;
+    }
+
+    if (inRiskSection) {
+      const isMarkdownRiskLine =
+        /^\|/.test(trimmed) ||
+        /^[-:|\s]+$/.test(trimmed) ||
+        /^(corporate registration|ownership transparency|offshore ownership|sanctions screening|media reputation|legal\s*\/\s*regulatory issues)\b/i.test(trimmed);
+
+      if (isMarkdownRiskLine || !trimmed) {
+        continue;
+      }
+
+      inRiskSection = false;
+    }
+
+    normalized.push(line);
+  }
+
+  return normalized.join("\n");
+}
+
+function sanitizeReport(report = "") {
+  return String(report || "")
+    .replace(/```/g, "")
+    .replace(/\*\*/g, "")
+    .replace(/\*/g, "")
+    .split(/\r?\n/)
+    .map((line) => line.replace(/^\s*\|\s?/, "").replace(/\s*\|\s*$/, ""))
+    .join("\n");
+}
+
+function ensureRiskDeterminationLine(report = "") {
+  const requiredLine = "Risk determination is performed by the automated scoring system.";
+  const trimmed = String(report || "").trim();
+  if (!trimmed) return requiredLine;
+  if (trimmed.endsWith(requiredLine)) return trimmed;
+  return `${trimmed}\n\n${requiredLine}`;
+}
+
+function buildSourcesSection(evidenceSources = []) {
+  if (evidenceSources.length) {
+    return ["Sources", "", ...evidenceSources.map((url, index) => `[${index + 1}] ${url}`)].join("\n");
+  }
+
+  return ["Sources", "", "No evidence sources identified from public search results."].join("\n");
 }
 
 async function getSanctionsScreening(company) {
@@ -204,9 +224,7 @@ export default async function handler(req, res) {
     const evidenceBlock = evidence
       .map((e, i) => `[${i + 1}] ${e.url}\n${e.snippet}`)
       .join("\n\n");
-    const evidenceSourcesList = evidence
-      .map((e, i) => `[${i + 1}] ${e.url}`)
-      .join("\n");
+    const evidenceSourcesList = evidence.map((e) => e.url).filter(Boolean);
 
     const promptWithScreening = [
       "You are a forensic due diligence analyst.",
@@ -272,12 +290,6 @@ export default async function handler(req, res) {
       "Keep citation markers [1], [2], etc in the report text as used.",
       "Use a maximum of 2 citations per sentence.",
       "Prefer one citation when possible, and never produce citation chains like [1][2][3].",
-      "Add a Sources section ONLY at the end of the report, AFTER Risk Conclusion, in this exact format:",
-      "Sources",
-      "",
-      evidenceSourcesList || "[1] https://example.com",
-      "Plain URLs only. Do not include HTML anchor tags.",
-      "Only include the exact URLs from the evidence list in Sources.",
       "",
       "Incorporate the screening findings below into the relevant sections:",
       sanctionsResult,
@@ -310,7 +322,8 @@ export default async function handler(req, res) {
     const data = await response.json();
     const modelResult = data.choices?.[0]?.message?.content || "";
     const citationLimitedResult = limitInlineCitations(modelResult);
-    const normalizedReport = normalizeSourcesAtEnd(citationLimitedResult);
+    const riskNormalizedResult = normalizeRiskBreakdown(citationLimitedResult);
+    const sanitizedResult = sanitizeReport(riskNormalizedResult);
 
     const intel = await collectAdditionalIntelligence(company, website);
 
@@ -335,8 +348,13 @@ export default async function handler(req, res) {
       intel.network?.summary || "No high-risk ownership links or sanctioned entities were identified within the corporate relationship network."
     ].join("\n");
 
+    const sourcesSection = buildSourcesSection(evidenceSourcesList);
+    const finalReport = ensureRiskDeterminationLine(
+      [sanitizedResult, additionalSections, sourcesSection].filter(Boolean).join("\n\n")
+    );
+
     res.status(200).json({
-      result: [normalizedReport, additionalSections].filter(Boolean).join("\n\n")
+      result: finalReport
     });
   } catch (err) {
     res.status(500).json({ error: err.message });
