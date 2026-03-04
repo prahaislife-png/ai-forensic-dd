@@ -472,7 +472,7 @@ async function run(){
       "Create a structured forensic due diligence report for "+name+
       ". Country: "+country+
       ". Website: "+website+
-      ". Use sections: Company Overview, Ownership & Management, Address Verification, Media & Reputation, Legal & Regulatory Issues, Sanctions Screening, Risk Conclusion. End with FLAG: GREEN or FLAG: YELLOW or FLAG: RED."
+      ". Use sections: Company Overview, Ownership & Management, Address Verification, Offshore Ownership Screening, Media & Reputation, Legal & Regulatory Issues, Sanctions Screening, Risk Conclusion. End with FLAG: GREEN or FLAG: YELLOW or FLAG: RED."
     })
   });
 
@@ -513,24 +513,58 @@ function buildReport(name,country,website,text){
   'Overall Risk Assessment: '+label+' ('+flag+')'+
   '</div>';
 
-  const parts=text.split(/\n(?=[A-Z])/);
+  const parsedSections=parseReportSections(text);
 
   let html="";
 
-  parts.forEach(p=>{
-    if(p.trim().length>40){
-      const title=(p.split(":")[0] || "Investigation Section").trim();
+  parsedSections.forEach(section=>{
+    if(section.body.length>0){
       html+='<div class="section">'+
         '<div class="sectionHead">'+
-          '<div class="sectionIcon">'+getSectionIcon(title)+'</div>'+
-          '<h3 class="sectionTitle">'+title+'</h3>'+
+          '<div class="sectionIcon">'+getSectionIcon(section.title)+'</div>'+
+          '<h3 class="sectionTitle">'+section.title+'</h3>'+
         '</div>'+
-        '<pre class="sectionBody">'+p+'</pre>'+
+        '<pre class="sectionBody">'+section.body+'</pre>'+
       '</div>';
     }
   });
 
-  document.getElementById("sections").innerHTML=html;
+  document.getElementById("sections").innerHTML=html || '<div class="section"><pre class="sectionBody">No structured sections were found in the report response.</pre></div>';
+}
+
+function parseReportSections(text){
+  const sectionTitles=[
+    "Company Overview",
+    "Ownership & Management",
+    "Address Verification",
+    "Offshore Ownership Screening",
+    "Media & Reputation",
+    "Legal & Regulatory Issues",
+    "Sanctions Screening",
+    "Risk Conclusion"
+  ];
+
+  const normalized=text || "";
+  const matches=[];
+
+  sectionTitles.forEach(title=>{
+    const escapedTitle=title.replace(/[.*+?^${}()|[\]\\]/g,"\\$&").replace(/\s+&\s+/g,"\\s*&\\s*");
+    const regex=new RegExp("(?:^|\\n)\\s*"+escapedTitle+"\\s*:?","i");
+    const match=regex.exec(normalized);
+
+    if(match){
+      matches.push({title,start:match.index,end:match.index+match[0].length});
+    }
+  });
+
+  matches.sort((a,b)=>a.start-b.start);
+
+  return matches.map((section,index)=>{
+    const nextSection=matches[index+1];
+    const body=normalized.slice(section.end,nextSection ? nextSection.start : normalized.length).trim();
+
+    return {title:section.title,body};
+  });
 }
 
 function getSectionIcon(title){
@@ -539,6 +573,7 @@ function getSectionIcon(title){
   if(t.includes("overview")) return "🏢";
   if(t.includes("ownership") || t.includes("management")) return "👥";
   if(t.includes("address")) return "📍";
+  if(t.includes("offshore")) return "🌐";
   if(t.includes("media") || t.includes("reputation")) return "📰";
   if(t.includes("legal") || t.includes("regulatory")) return "⚖️";
   if(t.includes("sanctions")) return "🚫";
