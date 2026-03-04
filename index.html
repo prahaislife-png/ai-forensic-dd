@@ -529,7 +529,7 @@ function buildReport(name,country,website,text){
     }
   });
 
-  document.getElementById("sections").innerHTML=html || '<div class="section"><pre class="sectionBody">No structured sections were found in the report response.</pre></div>';
+  document.getElementById("sections").innerHTML=html || renderRawReport(text);
 }
 
 function parseReportSections(text){
@@ -549,7 +549,7 @@ function parseReportSections(text){
 
   sectionTitles.forEach(title=>{
     const escapedTitle=title.replace(/[.*+?^${}()|[\]\\]/g,"\\$&").replace(/\s+&\s+/g,"\\s*&\\s*");
-    const regex=new RegExp("(?:^|\\n)\\s*"+escapedTitle+"\\s*:?","i");
+    const regex=new RegExp("(?:^|\\n)\\s*(?:#{2,3}\\s*|\\*\\*\\s*)?"+escapedTitle+"(?:\\s*\\*\\*)?\\s*:?","i");
     const match=regex.exec(normalized);
 
     if(match){
@@ -565,6 +565,27 @@ function parseReportSections(text){
 
     return {title:section.title,body};
   });
+}
+
+function renderRawReport(text){
+  const safeText=escapeHtml((text || "").trim() || "No report content returned.");
+
+  return '<div class="section">'+
+    '<div class="sectionHead">'+
+      '<div class="sectionIcon">📄</div>'+
+      '<h3 class="sectionTitle">Investigation Report</h3>'+
+    '</div>'+
+    '<pre class="sectionBody">'+safeText+'</pre>'+
+  '</div>';
+}
+
+function escapeHtml(value){
+  return (value || "")
+    .replace(/&/g,"&amp;")
+    .replace(/</g,"&lt;")
+    .replace(/>/g,"&gt;")
+    .replace(/"/g,"&quot;")
+    .replace(/'/g,"&#39;");
 }
 
 function getSectionIcon(title){
