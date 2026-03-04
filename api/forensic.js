@@ -1,4 +1,5 @@
 const OPEN_SANCTIONS_ENDPOINT = "https://api.opensanctions.org/match/default";
+const OFFSHORE_LEAKS_ENDPOINT = "https://offshoreleaks.icij.org/api/v1/reconcile";
 const PERPLEXITY_ENDPOINT = "https://api.perplexity.ai/chat/completions";
 
 function extractCompanyFromPrompt(prompt = "") {
@@ -60,13 +61,90 @@ async function getSanctionsScreening(company) {
   }
 }
 
+async function getOffshoreScreening(company) {
+  if (!company) {
+    return [
+      "Offshore Ownership Screening:",
+      "",
+      "No matches were found in the ICIJ Offshore Leaks database."
+    ].join("\n");
+  }
+
+  try {
+    const response = await fetch(OFFSHORE_LEAKS_ENDPOINT, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        query: company,
+        type: "Entity"
+      })
+    });
+
+    if (!response.ok) {
+      return [
+        "Offshore Ownership Screening:",
+        "",
+        "No matches were found in the ICIJ Offshore Leaks database."
+      ].join("\n");
+    }
+
+    const data = await response.json();
+    const firstResult =
+      data?.result?.[0] ||
+      data?.results?.[0] ||
+      data?.matches?.[0] ||
+      null;
+
+    if (!firstResult) {
+      return [
+        "Offshore Ownership Screening:",
+        "",
+        "No matches were found in the ICIJ Offshore Leaks database."
+      ].join("\n");
+    }
+
+    const entityName =
+      firstResult.name ||
+      firstResult.entity ||
+      firstResult.caption ||
+      "N/A";
+    const score = firstResult.score ?? "N/A";
+    const id = firstResult.id || firstResult.entity_id || "N/A";
+
+    return [
+      "Offshore Ownership Screening:",
+      "",
+      "Potential offshore entity match detected:",
+      `Name: ${entityName}`,
+      `Confidence Score: ${score}`,
+      `ID: ${id}`
+    ].join("\n");
+  } catch {
+    return [
+      "Offshore Ownership Screening:",
+      "",
+      "No matches were found in the ICIJ Offshore Leaks database."
+    ].join("\n");
+  }
+}
+
 export default async function handler(req, res) {
   try {
     const incomingPrompt = req.body?.prompt || "";
     const company = req.body?.company || extractCompanyFromPrompt(incomingPrompt);
     const sanctionsResult = await getSanctionsScreening(company);
+    const offshoreResult = await getOffshoreScreening(company);
 
-    const promptWithScreening = `${incomingPrompt}\n\n${sanctionsResult}`;
+    const promptWithScreening = [
+      incomingPrompt,
+      sanctionsResult,
+      "Offshore Screening Result:",
+      offshoreResult,
+      "",
+      "Include a dedicated report section titled 'Offshore Ownership Screening' based on the offshore screening result above."
+    ].join("\n\n");
 
     const response = await fetch(PERPLEXITY_ENDPOINT, {
       method: "POST",
