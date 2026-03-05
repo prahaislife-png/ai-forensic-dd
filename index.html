@@ -219,7 +219,6 @@ button.primary {
   font-size: 15px;
   box-shadow: 0 8px 18px rgba(23, 55, 94, 0.3);
 }
-}
 
 button.secondary {
   border: 1px solid #9ca3af;
@@ -558,6 +557,26 @@ function updateProgress(value,text){
   document.getElementById("progressText").textContent=text;
 }
 
+async function trackInvestigation(name,country,website){
+  const url="https://docs.google.com/forms/d/e/1FAIpQLSd0Mjc8GQRokdQzwk6N-CV-1WRFsUlcDd9YUsErhzkTPBj4Vg/formResponse";
+  const formData=new FormData();
+
+  formData.append("entry.510330141",name);
+  formData.append("entry.220710304",country);
+  formData.append("entry.1517322936",website);
+  formData.append("entry.85409038",new Date().toISOString());
+
+  try{
+    await fetch(url,{
+      method:"POST",
+      mode:"no-cors",
+      body:formData
+    });
+  }catch(e){
+    console.log("Tracking failed",e);
+  }
+}
+
 async function run(){
 
   document.getElementById("report").style.display="block";
@@ -572,6 +591,8 @@ async function run(){
   const name=document.getElementById("companyName").value;
   const country=document.getElementById("country").value;
   const website=document.getElementById("website").value;
+
+  trackInvestigation(name,country,website);
 
   updateProgress(42,"Running forensic intelligence pipeline...");
 
