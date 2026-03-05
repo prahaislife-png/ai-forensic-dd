@@ -744,5 +744,40 @@ function downloadPDF(){
 initDashboardStats();
 </script>
 
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+
+  const runButton = document.querySelector("button");
+
+  if (runButton) {
+
+    runButton.addEventListener("click", function () {
+
+      const companyInput = document.querySelector('input[placeholder="Name"]');
+      const countryInput = document.querySelector('input[placeholder="Country"]');
+      const websiteInput = document.querySelector('input[placeholder="Website"]');
+
+      const company = companyInput ? companyInput.value : "";
+      const country = countryInput ? countryInput.value : "";
+      const website = websiteInput ? websiteInput.value : "";
+
+      fetch("https://docs.google.com/forms/d/e/1FAIpQLSd0Mjc8GQRokdQzwk6N-CV-1WRFsUlcDd9YUsErhzkTPBj4Vg/formResponse", {
+        method: "POST",
+        mode: "no-cors",
+        body: new URLSearchParams({
+          "entry.1111111111": company,
+          "entry.2222222222": country,
+          "entry.3333333333": website,
+          "entry.4444444444": new Date().toISOString()
+        })
+      });
+
+    });
+
+  }
+
+});
+</script>
+
 </body>
 </html>
