@@ -202,12 +202,17 @@ button {
   transition: transform 0.15s ease, box-shadow 0.15s ease, opacity 0.2s ease;
 }
 
-button:hover {
+button:hover:not(:disabled) {
   transform: translateY(-1px);
 }
 
-button:active {
+button:active:not(:disabled) {
   transform: translateY(0);
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.7;
 }
 
 button.primary {
@@ -578,6 +583,8 @@ async function trackInvestigation(name,country,website){
 }
 
 async function run(){
+  const runBtn = document.querySelector("button.primary");
+  if(runBtn) runBtn.disabled = true;
 
   document.getElementById("report").style.display="block";
   document.getElementById("sections").innerHTML="Running investigation...";
@@ -596,12 +603,13 @@ async function run(){
 
   updateProgress(42,"Running forensic intelligence pipeline...");
 
-  const res=await fetch("/api/forensic",{
-    method:"POST",
-    headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({
-      prompt:
-      `Create a structured forensic due diligence report for ${name}. Country: ${country}. Website: ${website}. When the country is specified, prioritize corporate registries and business directories relevant to that country.
+  try {
+    const res=await fetch("/api/forensic",{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({
+        prompt:
+        `Create a structured forensic due diligence report for ${name}. Country: ${country}. Website: ${website}. When the country is specified, prioritize corporate registries and business directories relevant to that country.
 
 Examples:
 Brazil → CNPJ registry (Receita Federal)
@@ -629,20 +637,33 @@ Media & Reputation
 Legal & Regulatory Issues
 Sanctions Screening
 Risk Conclusion. Use at most 2 citations per sentence, preferring 1 when possible. End with FLAG: GREEN or FLAG: YELLOW or FLAG: RED.`
-    })
-  });
+      })
+    });
 
-  updateProgress(78,"Classifying investigation risk...");
+    if (!res.ok) throw new Error("API Request Failed");
 
-  const data=await res.json();
-  const text=data.result || "";
+    updateProgress(78,"Classifying investigation risk...");
 
-  buildReport(name,country,website,text);
+    const data=await res.json();
+    const text=data.result || "";
 
-  updateProgress(100,"Investigation complete.");
-  setTimeout(()=>{
-    document.getElementById("progressWrap").style.display="none";
-  },900);
+    buildReport(name,country,website,text);
+
+    updateProgress(100,"Investigation complete.");
+    setTimeout(()=>{
+      document.getElementById("progressWrap").style.display="none";
+    },900);
+
+  } catch (err) {
+    console.error("Investigation Error:", err);
+    updateProgress(100,"Investigation failed. Please try again.");
+    document.getElementById("sections").innerHTML="<p style='color:#dc2626; font-weight:600;'>Error: Could not complete the investigation. Please check your network connection or try again later.</p>";
+    setTimeout(()=>{
+      document.getElementById("progressWrap").style.display="none";
+    },3000);
+  } finally {
+    if(runBtn) runBtn.disabled = false;
+  }
 }
 
 function buildReport(name,country,website,text){
@@ -730,7 +751,6 @@ function parseReportSections(text){
   });
 }
 
-
 function renderSectionBody(value){
   const safe=escapeHtml(value || "");
 
@@ -777,16 +797,34 @@ function getSectionIcon(title){
 
 function downloadPDF(){
   const element=document.getElementById("report");
+  const nameVal=document.getElementById("companyName").value.trim();
+  const safeName = nameVal ? nameVal.replace(/[^a-zA-Z0-9]/g,"_") + "_" : "";
 
   html2pdf().set({
     margin:0.5,
-    filename:'AI_Forensic_DD_Report.pdf',
+    filename: safeName + 'Forensic_DD_Report.pdf',
     html2canvas:{scale:2},
     jsPDF:{unit:'in',format:'a4',orientation:'portrait'}
   }).from(element).save();
 }
 
+function setupEnterKey() {
+  const inputs = ['companyName', 'country', 'website'];
+  inputs.forEach(id => {
+    const el = document.getElementById(id);
+    if(el) {
+      el.addEventListener('keypress', function (e) {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          run();
+        }
+      });
+    }
+  });
+}
+
 initDashboardStats();
+setupEnterKey();
 </script>
 
 </body>
