@@ -22,6 +22,31 @@ function extractWebsiteFromPrompt(prompt = "") {
   return match?.[1]?.trim() || "";
 }
 
+
+function tokenize(value = "") {
+  return String(value)
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, " ")
+    .split(/\s+/)
+    .filter(Boolean);
+}
+
+function similarityScore(a = "", b = "") {
+  const aTokens = new Set(tokenize(a));
+  const bTokens = new Set(tokenize(b));
+  if (!aTokens.size || !bTokens.size) return 0;
+  let intersection = 0;
+  for (const token of aTokens) {
+    if (bTokens.has(token)) intersection += 1;
+  }
+  return (2 * intersection) / (aTokens.size + bTokens.size);
+}
+
+function classifySimilarity(similarity) {
+  if (similarity < 0.75) return { match: false, reason: "Low confidence similarity" };
+  if (similarity >= 0.85) return { match: true, reason: "Confirmed similarity threshold met" };
+  return { match: false, reason: "Possible name similarity — no confirmed relationship" };
+}
 function normalizeSourcesAtEnd(report = "") {
   const raw = String(report || "").trim();
   if (!raw) return "";
@@ -98,24 +123,23 @@ async function getSanctionsScreening(company) {
 
     const data = await response.json();
     const firstResult = data?.responses?.q1?.results?.[0];
-
-    if (!firstResult) {
-      return "Sanctions Screening Result:\nNo matches found";
-    }
+    if (!firstResult) return "Sanctions Screening Result:\nNo matches found";
 
     const entityName = firstResult.caption || firstResult.name || "N/A";
-    const dataset =
-      firstResult.match?.datasets?.[0] ||
-      firstResult.datasets?.[0] ||
-      "N/A";
-    const score = firstResult.match?.score ?? firstResult.score ?? "N/A";
+    const similarity = similarityScore(company, entityName);
+    const classification = classifySimilarity(similarity);
 
+    if (!classification.match) {
+      return ["Sanctions Screening Result:", classification.reason].join("\n");
+    }
+
+    const dataset = firstResult.match?.datasets?.[0] || firstResult.datasets?.[0] || "N/A";
     return [
       "Sanctions Screening Result:",
       "Potential match found:",
       `Name: ${entityName}`,
       `Dataset: ${dataset}`,
-      `Score: ${score}`
+      `Confidence: ${similarity.toFixed(2)}`
     ].join("\n");
   } catch {
     return "Sanctions Screening Result:\nNo matches found";
@@ -171,15 +195,20 @@ async function getOffshoreScreening(company) {
       firstResult.entity ||
       firstResult.caption ||
       "N/A";
-    const score = firstResult.score ?? "N/A";
     const id = firstResult.id || firstResult.entity_id || "N/A";
+    const similarity = similarityScore(company, entityName);
+    const classification = classifySimilarity(similarity);
+
+    if (!classification.match) {
+      return ["Offshore Ownership Screening:", "", classification.reason].join("\n");
+    }
 
     return [
       "Offshore Ownership Screening:",
       "",
       "Potential offshore entity match detected:",
       `Name: ${entityName}`,
-      `Confidence Score: ${score}`,
+      `Confidence Score: ${similarity.toFixed(2)}`,
       `ID: ${id}`
     ].join("\n");
   } catch {
@@ -318,13 +347,6 @@ export default async function handler(req, res) {
       "GLOBAL MEDIA INTELLIGENCE",
       "",
       intel.media?.summary || "No adverse global media coverage associated with the company or its leadership was identified in monitored news sources.",
-      "",
-      "DOMAIN INTELLIGENCE",
-      "",
-      `Domain: ${intel.domain?.domain || "N/A"}`,
-      `Registered: ${intel.domain?.registeredYear || "Unknown"}`,
-      `Registrar: ${intel.domain?.registrar || "Unknown"}`,
-      `Status: ${intel.domain?.status || "Unknown"}`,
       "",
       "PUBLIC KNOWLEDGE GRAPH",
       "",
