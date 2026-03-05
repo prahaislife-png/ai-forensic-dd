@@ -580,10 +580,7 @@ async function run(){
     headers:{"Content-Type":"application/json"},
     body:JSON.stringify({
       prompt:
-      "Create a structured forensic due diligence report for "+name+
-      ". Country: "+country+
-      ". Website: "+website+
-      ". When the country is specified, prioritize corporate registries and business directories relevant to that country.
+      `Create a structured forensic due diligence report for ${name}. Country: ${country}. Website: ${website}. When the country is specified, prioritize corporate registries and business directories relevant to that country.
 
 Examples:
 Brazil → CNPJ registry (Receita Federal)
@@ -610,7 +607,7 @@ Offshore Ownership Screening
 Media & Reputation
 Legal & Regulatory Issues
 Sanctions Screening
-Risk Conclusion. Use at most 2 citations per sentence, preferring 1 when possible. End with FLAG: GREEN or FLAG: YELLOW or FLAG: RED."
+Risk Conclusion. Use at most 2 citations per sentence, preferring 1 when possible. End with FLAG: GREEN or FLAG: YELLOW or FLAG: RED.`
     })
   });
 
