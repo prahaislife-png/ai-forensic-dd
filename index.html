@@ -1,0 +1,748 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>AI Forensic DD</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+<style>
+:root {
+  --bg: #eef2f7;
+  --surface: #ffffff;
+  --surface-alt: #f8fafc;
+  --primary: #17375e;
+  --primary-strong: #102843;
+  --accent: #2e5b9f;
+  --text: #0f172a;
+  --text-muted: #475569;
+  --border: #d8e1ec;
+  --shadow: 0 16px 30px rgba(15, 23, 42, 0.08);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: "Inter", "Segoe UI", Arial, sans-serif;
+  background: linear-gradient(180deg, #f6f9fd 0%, var(--bg) 100%);
+  color: var(--text);
+}
+
+.page {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 0 20px 24px;
+}
+
+.topBar {
+  background: linear-gradient(110deg, var(--primary-strong) 0%, var(--primary) 60%, #224b82 100%);
+  color: #fff;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 10px 24px rgba(16, 40, 67, 0.35);
+}
+
+.topBarInner {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 14px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.brandMark {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.16);
+  display: grid;
+  place-items: center;
+  font-size: 18px;
+}
+
+.brandTitle {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.brandSub {
+  margin: 2px 0 0;
+  font-size: 12px;
+  opacity: 0.85;
+}
+
+.topBarMeta {
+  text-align: right;
+}
+
+.projectBy {
+  margin: 0 0 8px;
+  font-size: 12px;
+  font-weight: 500;
+  opacity: 0.92;
+}
+
+.statusPill {
+  font-size: 12px;
+  padding: 7px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  background: rgba(255, 255, 255, 0.1);
+  white-space: nowrap;
+}
+
+.heroTitle {
+  margin: 20px 0 8px;
+  font-size: clamp(1.3rem, 1.9vw, 1.7rem);
+  font-weight: 800;
+  color: var(--primary-strong);
+}
+
+.heroSubtitle {
+  margin: 0 0 12px;
+  font-size: 0.92rem;
+  color: var(--text-muted);
+}
+
+.leftColumn {
+  display: flex;
+  flex-direction: column;
+}
+
+.workspaceGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 7fr) minmax(250px, 3fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.formCard,
+.pipelineCard,
+.report {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  box-shadow: var(--shadow);
+}
+
+.formCard,
+.pipelineCard {
+  padding: 20px;
+}
+
+.formHeading {
+  margin: 0;
+  font-size: 1.05rem;
+  color: var(--primary-strong);
+}
+
+.formDesc {
+  margin: 10px 0 14px;
+  font-size: 0.88rem;
+  color: var(--text-muted);
+  line-height: 1.45;
+}
+
+.inputRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+input,
+textarea {
+  width: 100%;
+  height: 42px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1px solid #c6d3e3;
+  font-size: 14px;
+  font-family: inherit;
+  color: var(--text);
+  background: #fff;
+}
+
+input:focus,
+textarea:focus {
+  outline: 2px solid #bfdbfe;
+  border-color: #7aa4da;
+}
+
+.buttonRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 10px;
+  align-items: center;
+}
+
+button {
+  padding: 11px 18px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-weight: 600;
+  font-family: inherit;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, opacity 0.2s ease;
+}
+
+button:hover {
+  transform: translateY(-1px);
+}
+
+button:active {
+  transform: translateY(0);
+}
+
+button.primary {
+  border: 1px solid #17375e;
+  background: #17375e;
+  color: #fff;
+  min-width: 190px;
+  min-height: 44px;
+  font-size: 15px;
+  box-shadow: 0 8px 18px rgba(23, 55, 94, 0.3);
+}
+}
+
+button.secondary {
+  border: 1px solid #9ca3af;
+  background: #fff;
+  color: #374151;
+  min-height: 44px;
+}
+
+.progressWrap {
+  margin-top: 10px;
+  max-width: 320px;
+}
+
+.progressBar {
+  width: 100%;
+  height: 8px;
+  border-radius: 999px;
+  background: #e2e8f0;
+  overflow: hidden;
+}
+
+.progressFill {
+  width: 0%;
+  height: 100%;
+  background: linear-gradient(90deg, #17375e, #2e5b9f);
+  transition: width 0.3s ease;
+}
+
+.progressText {
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.noticeCard {
+  background: #f8fafc;
+  border-left: 4px solid #2563eb;
+  padding: 16px;
+  border-radius: 8px;
+  margin-top: 20px;
+  font-size: 14px;
+  line-height: 1.6;
+  color: #334155;
+}
+
+.noticeCard p {
+  margin: 0 0 10px;
+}
+
+.noticeCard p:last-child {
+  margin-bottom: 0;
+}
+
+.noticeCard a {
+  color: #2563eb;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.noticeCard a:hover {
+  text-decoration: underline;
+}
+
+.pipelineTitle {
+  margin: 0 0 10px;
+  font-size: 1rem;
+  color: var(--primary-strong);
+}
+
+.pipelineList {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 6px;
+}
+
+.pipelineItem {
+  padding: 6px 8px;
+  border: 1px solid #e1e8f2;
+  border-radius: 6px;
+  background: var(--surface-alt);
+  font-size: 13px;
+  color: #1e293b;
+}
+
+.report {
+  padding: 24px;
+  margin-top: 16px;
+}
+
+.header {
+  border-bottom: 2px solid #e3ebf5;
+  margin-bottom: 20px;
+  padding-bottom: 14px;
+}
+
+.header h2 {
+  margin: 0;
+  font-size: 1.3rem;
+  color: var(--primary-strong);
+}
+
+.meta {
+  margin-top: 10px;
+  color: var(--text-muted);
+  font-size: 0.92rem;
+  line-height: 1.5;
+}
+
+.risk {
+  padding: 16px;
+  margin-top: 18px;
+  font-weight: 700;
+  border-left: 6px solid;
+  border-radius: 10px;
+  font-size: 0.95rem;
+}
+
+.green {
+  background: #ecfdf5;
+  border-color: #059669;
+  color: #065f46;
+}
+
+.yellow {
+  background: #fffbeb;
+  border-color: #d97706;
+  color: #92400e;
+}
+
+.red {
+  background: #fef2f2;
+  border-color: #dc2626;
+  color: #991b1b;
+}
+
+#sections {
+  display: grid;
+  gap: 14px;
+  margin-top: 14px;
+}
+
+.section {
+  padding: 16px 18px;
+  background: var(--surface-alt);
+  border: 1px solid #e1e8f2;
+  border-radius: 12px;
+}
+
+.sectionHead {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.sectionIcon {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: #dce8f7;
+  display: grid;
+  place-items: center;
+  font-size: 15px;
+}
+
+.sectionTitle {
+  margin: 0;
+  font-size: 0.98rem;
+  color: var(--primary);
+  font-weight: 700;
+}
+
+.sectionBody {
+  margin: 0;
+  white-space: pre-wrap;
+  font-family: inherit;
+  color: #1e293b;
+  line-height: 1.55;
+  font-size: 0.92rem;
+}
+
+.footer {
+  margin-top: 24px;
+  padding-top: 12px;
+  border-top: 1px solid #e4eaf3;
+  font-size: 12px;
+  color: #64748b;
+  text-align: center;
+}
+
+@media (max-width: 960px) {
+  .workspaceGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .pipelineCard {
+    order: 2;
+  }
+}
+
+@media (max-width: 860px) {
+  .topBarInner {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .topBarMeta {
+    text-align: left;
+  }
+
+  .statusPill {
+    align-self: flex-start;
+  }
+
+  .inputRow {
+    grid-template-columns: 1fr;
+  }
+
+  .formCard,
+  .pipelineCard,
+  .report {
+    padding: 18px;
+  }
+
+  .page {
+    padding: 0 14px 24px;
+  }
+}
+</style>
+</head>
+
+<body>
+<div class="topBar">
+  <div class="topBarInner">
+    <div class="brand">
+      <div class="brandMark">🛡️</div>
+      <div>
+        <p class="brandTitle">Enterprise Investigation Console</p>
+        <p class="brandSub">AI-Enabled Forensic Due Diligence</p>
+      </div>
+    </div>
+    <div class="topBarMeta">
+      <p class="projectBy">Project by Govind</p>
+      <div class="statusPill">Public Source Intelligence Workflow</div>
+    </div>
+  </div>
+</div>
+
+<div class="page">
+  <h2 class="heroTitle">Enterprise Risk Intelligence Console</h2>
+  <p class="heroSubtitle">AI-Powered Corporate Investigation System</p>
+
+  <div class="workspaceGrid">
+    <div class="leftColumn">
+      <div class="formCard">
+        <h3 class="formHeading">Forensic Due Diligence Investigation</h3>
+        <p class="formDesc">Generate structured forensic due diligence reports using global compliance datasets, sanctions intelligence, ownership analysis, and AI-driven risk classification.</p>
+
+        <div class="inputRow">
+          <input type="text" id="companyName" placeholder="Name" />
+          <input type="text" id="country" placeholder="Country" />
+        </div>
+
+        <input type="text" id="website" placeholder="Website" />
+
+        <div class="buttonRow">
+          <button class="primary" onclick="run()">Run Investigation</button>
+          <button class="secondary" onclick="downloadPDF()">Download PDF</button>
+        </div>
+
+        <div class="progressWrap" id="progressWrap" style="display:none">
+          <div class="progressBar">
+            <div class="progressFill" id="progressFill"></div>
+          </div>
+          <div class="progressText" id="progressText">Preparing investigation...</div>
+        </div>
+      </div>
+
+      <div class="noticeCard">
+        <p>This tool is currently in a testing phase, and new features and improvements are being added regularly.</p>
+        <p>Your feedback is genuinely appreciated. If you have suggestions or notice issues, feel free to share by clicking on this link: <a href="https://app.youform.com/forms/dry2mwft" target="_blank" rel="noopener noreferrer">https://app.youform.com/forms/dry2mwft</a></p>
+        
+        <p>The report is AI-generated from public data sources and should be used as supporting intelligence only. Always conduct your normal verification and research-- Govind</p>
+      </div>
+
+      <span id="reportsGenerated" style="display:none">0</span>
+    </div>
+
+    <aside class="pipelineCard">
+      <h3 class="pipelineTitle">Investigation Pipeline</h3>
+      <ul class="pipelineList">
+        <li class="pipelineItem">🏢 Corporate Registry Verification</li>
+        <li class="pipelineItem">✔ Business Identity Validation</li>
+        <li class="pipelineItem">🌐 Domain Intelligence</li>
+        <li class="pipelineItem">🌍 Sanctions Screening</li>
+        <li class="pipelineItem">👤 PEP Screening</li>
+        <li class="pipelineItem">🧬 Ownership Screening</li>
+        <li class="pipelineItem">🔗 Corporate Network Analysis</li>
+        <li class="pipelineItem">📰 Adverse Media</li>
+        <li class="pipelineItem">⚖ Legal Records</li>
+        <li class="pipelineItem">📍 Address Verification</li>
+        <li class="pipelineItem">🧠 Knowledge Graph</li>
+        <li class="pipelineItem">⭐ Reputation Analysis</li>
+        <li class="pipelineItem">⚠ Risk Classification</li>
+      </ul>
+    </aside>
+  </div>
+
+  <div id="report" class="report" style="display:none">
+    <div class="header">
+      <h2>Forensic Due Diligence Report</h2>
+      <div class="meta" id="meta"></div>
+    </div>
+
+    <div id="riskBox"></div>
+
+    <div id="sections"></div>
+
+    <div class="footer">
+      Created by Govind • Enterprise AI Compliance Platform
+    </div>
+  </div>
+</div>
+
+<script>
+function initDashboardStats(){
+  const reports=Number(localStorage.getItem("reportCounter") || "0");
+  document.getElementById("reportsGenerated").textContent=reports;
+}
+
+function updateProgress(value,text){
+  document.getElementById("progressWrap").style.display="block";
+  document.getElementById("progressFill").style.width=value+"%";
+  document.getElementById("progressText").textContent=text;
+}
+
+async function run(){
+
+  document.getElementById("report").style.display="block";
+  document.getElementById("sections").innerHTML="Running investigation...";
+
+  const currentReports=Number(localStorage.getItem("reportCounter") || "0")+1;
+  localStorage.setItem("reportCounter",String(currentReports));
+  document.getElementById("reportsGenerated").textContent=currentReports;
+
+  updateProgress(18,"Collecting input parameters...");
+
+  const name=document.getElementById("companyName").value;
+  const country=document.getElementById("country").value;
+  const website=document.getElementById("website").value;
+
+  updateProgress(42,"Running forensic intelligence pipeline...");
+
+  const res=await fetch("/api/forensic",{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({
+      prompt:
+      "Create a structured forensic due diligence report for "+name+
+      ". Country: "+country+
+      ". Website: "+website+
+      ". Use sections: Company Overview, Ownership & Management, Address Verification, Offshore Ownership Screening, Media & Reputation, Legal & Regulatory Issues, Sanctions Screening, Risk Conclusion. Use at most 2 citations per sentence, preferring 1 when possible. End with FLAG: GREEN or FLAG: YELLOW or FLAG: RED."
+    })
+  });
+
+  updateProgress(78,"Classifying investigation risk...");
+
+  const data=await res.json();
+  const text=data.result || "";
+
+  buildReport(name,country,website,text);
+
+  updateProgress(100,"Investigation complete.");
+  setTimeout(()=>{
+    document.getElementById("progressWrap").style.display="none";
+  },900);
+}
+
+function buildReport(name,country,website,text){
+
+  const today=new Date().toLocaleDateString();
+
+  document.getElementById("meta").innerHTML=
+  "<b>Company:</b> "+name+
+  "<br><b>Country:</b> "+country+
+  "<br><b>Website:</b> "+website+
+  "<br><b>Date:</b> "+today+
+  "<br><b>Screening Type:</b> AI Public Source Due Diligence";
+
+  let flag="GREEN";
+  let riskClass="green";
+  let label="LOW RISK";
+
+  if(text.includes("FLAG: RED")){
+    flag="RED";
+    riskClass="red";
+    label="HIGH RISK";
+  }
+  else if(text.includes("FLAG: YELLOW")){
+    flag="YELLOW";
+    riskClass="yellow";
+    label="MEDIUM RISK";
+  }
+
+  document.getElementById("riskBox").innerHTML=
+  '<div class="risk '+riskClass+'">'+
+  'Overall Risk Assessment: '+label+' ('+flag+')'+
+  '</div>';
+
+  const parsedSections=parseReportSections(text);
+
+  let html="";
+
+  parsedSections.forEach(section=>{
+    if(section.body.length>0){
+      html+='<div class="section">'+
+        '<div class="sectionHead">'+
+          '<div class="sectionIcon">'+getSectionIcon(section.title)+'</div>'+
+          '<h3 class="sectionTitle">'+section.title+'</h3>'+
+        '</div>'+
+        '<div class="sectionBody">'+renderSectionBody(section.body)+'</div>'+
+      '</div>';
+    }
+  });
+
+  document.getElementById("sections").innerHTML=html || renderRawReport(text);
+}
+
+function parseReportSections(text){
+  const sectionTitles=[
+    "Company Overview",
+    "Ownership & Management",
+    "Address Verification",
+    "Offshore Ownership Screening",
+    "Media & Reputation",
+    "Legal & Regulatory Issues",
+    "Sanctions Screening",
+    "Risk Conclusion"
+  ];
+
+  const normalized=text || "";
+  const matches=[];
+
+  sectionTitles.forEach(title=>{
+    const escapedTitle=title.replace(/[.*+?^${}()|[\]\\]/g,"\\$&").replace(/\s+&\s+/g,"\\s*&\\s*");
+    const regex=new RegExp("(?:^|\\n)\\s*(?:#{1,3}\\s*|\\*\\*\\s*)?"+escapedTitle+"(?:\\s*\\*\\*)?\\s*:?","i");
+    const match=regex.exec(normalized);
+
+    if(match){
+      matches.push({title,start:match.index,end:match.index+match[0].length});
+    }
+  });
+
+  matches.sort((a,b)=>a.start-b.start);
+
+  return matches.map((section,index)=>{
+    const nextSection=matches[index+1];
+    const body=normalized.slice(section.end,nextSection ? nextSection.start : normalized.length).trim();
+
+    return {title:section.title,body};
+  });
+}
+
+
+function renderSectionBody(value){
+  const safe=escapeHtml(value || "");
+
+  return safe.replace(/(^|\n)\s*#{1,3}\s+([^\n]+)/g,(match,prefix,title)=>{
+    return `${prefix}<h3>${title.trim()}</h3>`;
+  });
+}
+
+function renderRawReport(text){
+  const safeText=escapeHtml((text || "").trim() || "No report content returned.");
+
+  return '<div class="section">'+
+    '<div class="sectionHead">'+
+      '<div class="sectionIcon">📄</div>'+
+      '<h3 class="sectionTitle">Investigation Report</h3>'+
+    '</div>'+
+    '<div class="sectionBody">'+renderSectionBody(safeText)+'</div>'+
+  '</div>';
+}
+
+function escapeHtml(value){
+  return (value || "")
+    .replace(/&/g,"&amp;")
+    .replace(/</g,"&lt;")
+    .replace(/>/g,"&gt;")
+    .replace(/"/g,"&quot;")
+    .replace(/'/g,"&#39;");
+}
+
+function getSectionIcon(title){
+  const t=(title || "").toLowerCase();
+
+  if(t.includes("overview")) return "🏢";
+  if(t.includes("ownership") || t.includes("management")) return "👥";
+  if(t.includes("address")) return "📍";
+  if(t.includes("offshore")) return "🌐";
+  if(t.includes("media") || t.includes("reputation")) return "📰";
+  if(t.includes("legal") || t.includes("regulatory")) return "⚖️";
+  if(t.includes("sanctions")) return "🚫";
+  if(t.includes("risk") || t.includes("conclusion")) return "📊";
+
+  return "📁";
+}
+
+function downloadPDF(){
+  const element=document.getElementById("report");
+
+  html2pdf().set({
+    margin:0.5,
+    filename:'AI_Forensic_DD_Report.pdf',
+    html2canvas:{scale:2},
+    jsPDF:{unit:'in',format:'a4',orientation:'portrait'}
+  }).from(element).save();
+}
+
+initDashboardStats();
+</script>
+
+</body>
+</html>
