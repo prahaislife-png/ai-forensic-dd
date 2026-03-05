@@ -573,27 +573,6 @@ async function run(){
   const country=document.getElementById("country").value;
   const website=document.getElementById("website").value;
 
-  try {
-
-    const formURL = "https://docs.google.com/forms/d/e/1FAIpQLSd0Mjc8GQRokdQzwk6N-CV-1WRFsUlcDd9YUsErhzkTPBj4Vg/formResponse";
-
-    const formData = new FormData();
-
-    formData.append("entry.510330141", name);
-    formData.append("entry.220710304", country);
-    formData.append("entry.1517322936", website);
-    formData.append("entry.85409038", new Date().toISOString());
-
-    fetch(formURL,{
-      method:"POST",
-      mode:"no-cors",
-      body:formData
-    });
-
-  } catch(e) {
-    console.log("Logging failed",e);
-  }
-
   updateProgress(42,"Running forensic intelligence pipeline...");
 
   const res=await fetch("/api/forensic",{
@@ -763,41 +742,6 @@ function downloadPDF(){
 }
 
 initDashboardStats();
-</script>
-
-<script>
-document.addEventListener("DOMContentLoaded", function () {
-
-  const runButton = document.querySelector("button");
-
-  if (runButton) {
-
-    runButton.addEventListener("click", function () {
-
-      const companyInput = document.querySelector('input[placeholder="Name"]');
-      const countryInput = document.querySelector('input[placeholder="Country"]');
-      const websiteInput = document.querySelector('input[placeholder="Website"]');
-
-      const company = companyInput ? companyInput.value : "";
-      const country = countryInput ? countryInput.value : "";
-      const website = websiteInput ? websiteInput.value : "";
-
-      fetch("https://docs.google.com/forms/d/e/1FAIpQLSd0Mjc8GQRokdQzwk6N-CV-1WRFsUlcDd9YUsErhzkTPBj4Vg/formResponse", {
-        method: "POST",
-        mode: "no-cors",
-        body: new URLSearchParams({
-          "entry.510330141": company,
-          "entry.220710304": country,
-          "entry.1517322936": website,
-          "entry.85409038": new Date().toISOString()
-        })
-      });
-
-    });
-
-  }
-
-});
 </script>
 
 </body>
