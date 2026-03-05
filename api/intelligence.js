@@ -1,12 +1,15 @@
 const RDAP_DOMAIN_API = "https://rdap.org/domain/";
+const DUCKDUCKGO_INSTANT_API = "https://api.duckduckgo.com/";
 const OPENCORPORATES_COMPANY_SEARCH_API = "https://api.opencorporates.com/v0.4/companies/search";
 const OPENCORPORATES_COMPANY_DETAILS_API = "https://api.opencorporates.com/v0.4/companies";
+const OPENCORPORATES_OFFICERS_SEARCH_API = "https://api.opencorporates.com/v0.4/officers/search";
 const GDELT_DOC_API = "https://api.gdeltproject.org/api/v2/doc/doc";
 const WIKIPEDIA_SEARCH_API = "https://en.wikipedia.org/w/api.php";
 
 function extractDomain(url) {
   try {
-    return new URL(url).hostname.replace("www.", "").toLowerCase();
+    const hostname = new URL(url).hostname;
+    return hostname.replace("www.", "").toLowerCase();
   } catch {
     return null;
   }
@@ -26,27 +29,182 @@ async function fetchJson(url) {
   return response.json();
 }
 
-function extractRegistrarName(entities = []) {
-  const registrarEntity = entities.find(
-    (entity) => Array.isArray(entity?.roles) && entity.roles.some((role) => /registrar/i.test(role))
-  );
-
-  if (!registrarEntity) return null;
-
-  const fnField = Array.isArray(registrarEntity?.vcardArray?.[1])
-    ? registrarEntity.vcardArray[1].find((item) => item?.[0] === "fn")
-    : null;
-
-  return fnField?.[3] || registrarEntity.handle || null;
+async function fetchText(url) {
+  const response = await fetch(url, { redirect: "follow" });
+  if (!response.ok) {
+    throw new Error(`Request failed: ${response.status}`);
+  }
+  return response.text();
 }
 
 function normalizeDomainCandidate(website) {
   if (!website) return null;
   const trimmed = String(website).trim();
   if (!trimmed) return null;
-
   const withProtocol = /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
   return extractDomain(withProtocol);
+}
+
+function cleanString(value) {
+  if (!value) return null;
+  const normalized = String(value).replace(/\s+/g, " ").trim();
+  return normalized || null;
+}
+
+function uniqueStrings(values = []) {
+  return Array.from(new Set(values.map(cleanString).filter(Boolean)));
+}
+
+function collectUrlsFromDuckResult(data) {
+  const urls = [];
+
+  if (data?.AbstractURL) urls.push(data.AbstractURL);
+
+  const collectRelated = (items = []) => {
+    for (const item of items) {
+      if (item?.FirstURL) {
+        urls.push(item.FirstURL);
+      }
+      if (Array.isArray(item?.Topics)) {
+        collectRelated(item.Topics);
+      }
+    }
+  };
+
+  if (Array.isArray(data?.RelatedTopics)) {
+    collectRelated(data.RelatedTopics);
+  }
+
+  if (Array.isArray(data?.Results)) {
+    for (const item of data.Results) {
+      if (item?.FirstURL) urls.push(item.FirstURL);
+    }
+  }
+
+  return uniqueStrings(urls);
+}
+
+function categorizeUrl(url) {
+  const domain = extractDomain(url || "");
+  if (!domain) return "other";
+  if (domain.includes("linkedin.com")) return "linkedin";
+  if (domain.includes("opencorporates.com")) return "registry";
+  if (domain.includes("bloomberg.com")) return "media";
+  if (domain.includes("crunchbase.com")) return "business_directory";
+  if (domain.includes("wikipedia.org")) return "knowledge_graph";
+  if (domain.includes("gov") || domain.includes("gouv") || domain.includes(".gc.")) return "government_registry";
+  return "other";
+}
+
+async function runDuckDuckGoQuery(query) {
+  try {
+    const params = new URLSearchParams({ q: query, format: "json", no_redirect: "1", no_html: "1" });
+    const data = await fetchJson(`${DUCKDUCKGO_INSTANT_API}?${params.toString()}`);
+    return collectUrlsFromDuckResult(data);
+  } catch {
+    return [];
+  }
+}
+
+async function getGlobalSearchDiscovery(companyName) {
+  if (!companyName) {
+    return {
+      discoveredUrls: [],
+      categorizedUrls: {
+        linkedin: [],
+        registry: [],
+        media: [],
+        business_directory: [],
+        knowledge_graph: [],
+        government_registry: [],
+        other: []
+      }
+    };
+  }
+
+  const queries = [
+    companyName,
+    `site:linkedin.com ${companyName}`,
+    `site:opencorporates.com ${companyName}`,
+    `site:bloomberg.com ${companyName}`,
+    `site:crunchbase.com ${companyName}`
+  ];
+
+  const results = await Promise.all(queries.map((query) => runDuckDuckGoQuery(query)));
+  const discoveredUrls = uniqueStrings(results.flat());
+
+  const categorizedUrls = {
+    linkedin: [],
+    registry: [],
+    media: [],
+    business_directory: [],
+    knowledge_graph: [],
+    government_registry: [],
+    other: []
+  };
+
+  for (const url of discoveredUrls) {
+    const bucket = categorizeUrl(url);
+    categorizedUrls[bucket].push(url);
+  }
+
+  return {
+    discoveredUrls,
+    categorizedUrls
+  };
+}
+
+function normalizeAddress(value) {
+  return cleanString(value)?.toLowerCase() || null;
+}
+
+function extractAddressCandidates(text) {
+  if (!text) return [];
+
+  const compact = text.replace(/\s+/g, " ");
+  const patterns = [
+    /\b\d{1,6}\s+[A-Za-z0-9.,\-\s]{3,80}\b(?:Street|St|Avenue|Ave|Road|Rd|Boulevard|Blvd|Lane|Ln|Drive|Dr|Suite|Ste|Floor|Fl)\b[^.\n]{0,120}/gi,
+    /\b[Pp]\.?\s?[Oo]\.?(?:\s?[Bb]ox)?\s*\d+[A-Za-z0-9\-\s,]{0,80}/g,
+    /\b[A-Za-z\-\s]+,\s*[A-Za-z\-\s]+,\s*[A-Z]{2}\s*\d{4,10}\b/g,
+    /\b[A-Za-z\-\s]+,\s*[A-Za-z\-\s]+\s*\d{4,10},\s*[A-Za-z\-\s]+\b/g
+  ];
+
+  const matches = [];
+  for (const regex of patterns) {
+    const found = compact.match(regex);
+    if (found) matches.push(...found);
+  }
+
+  return uniqueStrings(matches.map((entry) => entry.replace(/\s+/g, " ").trim()));
+}
+
+function pickMostFrequentAddress(addresses = []) {
+  const counts = new Map();
+  const displayMap = new Map();
+
+  for (const address of addresses) {
+    const clean = cleanString(address);
+    const key = normalizeAddress(clean);
+    if (!key) continue;
+    counts.set(key, (counts.get(key) || 0) + 1);
+    if (!displayMap.has(key)) displayMap.set(key, clean);
+  }
+
+  if (!counts.size) {
+    return {
+      verifiedAddress: null,
+      alternativeAddresses: []
+    };
+  }
+
+  const sorted = Array.from(counts.entries()).sort((a, b) => b[1] - a[1]);
+  const verifiedAddress = displayMap.get(sorted[0][0]) || null;
+  const alternativeAddresses = sorted.slice(1).map(([key]) => displayMap.get(key)).filter(Boolean);
+
+  return {
+    verifiedAddress,
+    alternativeAddresses
+  };
 }
 
 async function getDomainIntelligence(website) {
@@ -56,113 +214,42 @@ async function getDomainIntelligence(website) {
     return {
       domain: null,
       registrar: null,
-      createdDate: null,
-      nameservers: [],
-      country: null
+      creationDate: null,
+      nameservers: []
     };
   }
 
   try {
     const rdapData = await fetchJson(`${RDAP_DOMAIN_API}${encodeURIComponent(domain)}`);
 
-    const createdDate =
+    const creationDate =
       rdapData?.events?.find((event) => event?.eventAction === "registration")?.eventDate || null;
 
     const nameservers = Array.isArray(rdapData?.nameservers)
       ? rdapData.nameservers.map((ns) => ns?.ldhName).filter(Boolean)
       : [];
 
-    const country =
-      rdapData?.entities?.find((entity) => entity?.country)?.country || rdapData?.country || null;
+    const registrarEntity = Array.isArray(rdapData?.entities)
+      ? rdapData.entities.find(
+          (entity) => Array.isArray(entity?.roles) && entity.roles.some((role) => /registrar/i.test(role))
+        )
+      : null;
+
+    const registrar =
+      registrarEntity?.vcardArray?.[1]?.find((item) => item?.[0] === "fn")?.[3] || registrarEntity?.handle || null;
 
     return {
       domain,
-      registrar: extractRegistrarName(Array.isArray(rdapData?.entities) ? rdapData.entities : []) || null,
-      createdDate,
-      nameservers,
-      country
+      registrar,
+      creationDate,
+      nameservers
     };
   } catch {
     return {
       domain,
       registrar: null,
-      createdDate: null,
-      nameservers: [],
-      country: null
-    };
-  }
-}
-
-async function getWebsiteSecurity(domain) {
-  if (!domain) {
-    return {
-      websiteAccessible: false,
-      httpsEnabled: false
-    };
-  }
-
-  try {
-    const response = await fetch(`https://${domain}`, { redirect: "follow" });
-    return {
-      websiteAccessible: response.ok,
-      httpsEnabled: true
-    };
-  } catch {
-    return {
-      websiteAccessible: false,
-      httpsEnabled: false
-    };
-  }
-}
-
-function detectTechnologies(html = "", headers = {}) {
-  const lowerHtml = html.toLowerCase();
-  const headerValues = Object.values(headers).join(" ").toLowerCase();
-  const detected = [];
-
-  const patterns = [
-    { name: "WordPress", regex: /wp-content|wordpress/i },
-    { name: "Shopify", regex: /cdn\.shopify|shopify/i },
-    { name: "React", regex: /react|__next|data-reactroot/i },
-    { name: "Angular", regex: /ng-app|angular/i },
-    { name: "Google Analytics", regex: /gtag\(|google-analytics|googletagmanager/i },
-    { name: "Cloudflare", regex: /cloudflare|cf-ray/i }
-  ];
-
-  for (const pattern of patterns) {
-    if (pattern.regex.test(lowerHtml) || pattern.regex.test(headerValues)) {
-      detected.push(pattern.name);
-    }
-  }
-
-  return Array.from(new Set(detected));
-}
-
-async function getTechnologyProfile(domain) {
-  if (!domain) {
-    return {
-      detectedTechnologies: []
-    };
-  }
-
-  try {
-    const response = await fetch(`https://${domain}`, { redirect: "follow" });
-    if (!response.ok) {
-      return { detectedTechnologies: [] };
-    }
-
-    const html = await response.text();
-    const headers = {};
-    response.headers.forEach((value, key) => {
-      headers[key] = value;
-    });
-
-    return {
-      detectedTechnologies: detectTechnologies(html, headers)
-    };
-  } catch {
-    return {
-      detectedTechnologies: []
+      creationDate: null,
+      nameservers: []
     };
   }
 }
@@ -174,31 +261,72 @@ async function getCorporateRegistry(companyName) {
       jurisdiction: null,
       companyNumber: null,
       incorporationDate: null,
-      companyStatus: null
+      companyStatus: null,
+      registeredAddress: null,
+      officers: []
     };
   }
 
   try {
-    const params = new URLSearchParams({ q: companyName, per_page: "1" });
-    const data = await fetchJson(`${OPENCORPORATES_COMPANY_SEARCH_API}?${params.toString()}`);
-    const company = data?.results?.companies?.[0]?.company;
+    const params = new URLSearchParams({ q: companyName, per_page: "5" });
+    const searchData = await fetchJson(`${OPENCORPORATES_COMPANY_SEARCH_API}?${params.toString()}`);
+    const candidates = Array.isArray(searchData?.results?.companies) ? searchData.results.companies : [];
+    const selected = candidates[0]?.company;
 
-    if (!company) {
+    if (!selected) {
       return {
         companyName: null,
         jurisdiction: null,
         companyNumber: null,
         incorporationDate: null,
-        companyStatus: null
+        companyStatus: null,
+        registeredAddress: null,
+        officers: []
       };
     }
 
+    const jurisdiction = selected?.jurisdiction_code || null;
+    const companyNumber = selected?.company_number || null;
+
+    let registeredAddress = cleanString(selected?.registered_address_in_full || selected?.registered_address);
+    let officers = [];
+
+    if (jurisdiction && companyNumber) {
+      try {
+        const detailsUrl = `${OPENCORPORATES_COMPANY_DETAILS_API}/${encodeURIComponent(
+          jurisdiction
+        )}/${encodeURIComponent(companyNumber)}`;
+        const detailsData = await fetchJson(detailsUrl);
+        const detailedCompany = detailsData?.results?.company;
+
+        registeredAddress =
+          cleanString(
+            detailedCompany?.registered_address_in_full ||
+              detailedCompany?.registered_address?.street_address ||
+              detailedCompany?.registered_address
+          ) || registeredAddress;
+
+        officers = Array.isArray(detailedCompany?.officers)
+          ? detailedCompany.officers
+              .map((entry) => ({
+                name: cleanString(entry?.officer?.name),
+                position: cleanString(entry?.officer?.position)
+              }))
+              .filter((entry) => entry.name)
+          : [];
+      } catch {
+        officers = [];
+      }
+    }
+
     return {
-      companyName: company?.name || null,
-      jurisdiction: company?.jurisdiction_code || null,
-      companyNumber: company?.company_number || null,
-      incorporationDate: company?.incorporation_date || null,
-      companyStatus: company?.current_status || null
+      companyName: cleanString(selected?.name),
+      jurisdiction,
+      companyNumber,
+      incorporationDate: selected?.incorporation_date || null,
+      companyStatus: cleanString(selected?.current_status),
+      registeredAddress,
+      officers
     };
   } catch {
     return {
@@ -206,54 +334,94 @@ async function getCorporateRegistry(companyName) {
       jurisdiction: null,
       companyNumber: null,
       incorporationDate: null,
-      companyStatus: null
+      companyStatus: null,
+      registeredAddress: null,
+      officers: []
     };
   }
 }
 
-async function getCorporateNetwork(corporateRegistry) {
-  const jurisdiction = corporateRegistry?.jurisdiction;
-  const companyNumber = corporateRegistry?.companyNumber;
+function extractCompanyDescription(html = "") {
+  if (!html) return null;
 
-  if (!jurisdiction || !companyNumber) {
+  const metaMatch = html.match(/<meta[^>]+name=["']description["'][^>]+content=["']([^"']+)["'][^>]*>/i);
+  if (metaMatch?.[1]) return cleanString(metaMatch[1]);
+
+  const titleMatch = html.match(/<title>([^<]+)<\/title>/i);
+  return cleanString(titleMatch?.[1]);
+}
+
+function extractEmails(text = "") {
+  const matches = text.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi) || [];
+  return uniqueStrings(matches);
+}
+
+function extractPhones(text = "") {
+  const matches = text.match(/(?:\+\d{1,3}[\s.-]?)?(?:\(\d{2,4}\)|\d{2,4})[\s.-]?\d{2,4}[\s.-]?\d{3,4}/g) || [];
+  return uniqueStrings(matches);
+}
+
+async function fetchPageWithFallback(urls = []) {
+  for (const url of urls) {
+    try {
+      const html = await fetchText(url);
+      return { url, html };
+    } catch {
+      // continue
+    }
+  }
+  return { url: null, html: null };
+}
+
+async function getWebsiteAnalysis(website) {
+  const domain = normalizeDomainCandidate(website);
+
+  if (!domain) {
     return {
-      directors: [],
-      officers: []
+      websiteExists: false,
+      httpsEnabled: false,
+      companyDescription: null,
+      address: null,
+      phone: null,
+      email: null,
+      pagesChecked: []
     };
   }
 
-  try {
-    const detailsUrl = `${OPENCORPORATES_COMPANY_DETAILS_API}/${encodeURIComponent(
-      jurisdiction
-    )}/${encodeURIComponent(companyNumber)}`;
+  const baseHttps = `https://${domain}`;
+  const baseHttp = `http://${domain}`;
 
-    const data = await fetchJson(detailsUrl);
-    const officers = Array.isArray(data?.results?.company?.officers)
-      ? data.results.company.officers
-      : [];
+  const homepage = await fetchPageWithFallback([baseHttps, baseHttp]);
+  const pages = ["/about", "/contact"];
+  const pageResults = [];
+  let aggregateText = homepage.html || "";
 
-    const normalizedOfficers = officers
-      .map((entry) => ({
-        name: entry?.officer?.name || null,
-        position: entry?.officer?.position || null
-      }))
-      .filter((entry) => entry.name || entry.position);
-
-    const directors = normalizedOfficers
-      .filter((entry) => /director/i.test(entry.position || ""))
-      .map((entry) => entry.name)
-      .filter(Boolean);
-
-    return {
-      directors: Array.from(new Set(directors)),
-      officers: normalizedOfficers
-    };
-  } catch {
-    return {
-      directors: [],
-      officers: []
-    };
+  for (const path of pages) {
+    const pageData = await fetchPageWithFallback([`${baseHttps}${path}`, `${baseHttp}${path}`]);
+    pageResults.push({ path, url: pageData.url, found: Boolean(pageData.html) });
+    if (pageData.html) aggregateText += `\n${pageData.html}`;
   }
+
+  const descriptions = [extractCompanyDescription(homepage.html), extractCompanyDescription(aggregateText)].filter(Boolean);
+  const addresses = extractAddressCandidates(aggregateText);
+  const phones = extractPhones(aggregateText);
+  const emails = extractEmails(aggregateText);
+
+  return {
+    websiteExists: Boolean(homepage.html),
+    httpsEnabled: homepage.url?.startsWith("https://") || false,
+    companyDescription: descriptions[0] || null,
+    address: addresses[0] || null,
+    phone: phones[0] || null,
+    email: emails[0] || null,
+    pagesChecked: [
+      { path: "/", url: homepage.url, found: Boolean(homepage.html) },
+      ...pageResults
+    ],
+    extractedAddresses: addresses,
+    extractedPhones: phones,
+    extractedEmails: emails
+  };
 }
 
 async function getAdverseMedia(companyName) {
@@ -265,45 +433,42 @@ async function getAdverseMedia(companyName) {
     };
   }
 
-  try {
-    const keywords = [
-      "fraud",
-      "corruption",
-      "bribery",
-      "money laundering",
-      "lawsuit",
-      "criminal investigation",
-      "scam"
-    ];
+  const keywords = ["fraud", "corruption", "lawsuit", "criminal investigation", "bribery", "sanctions"];
+  const sources = new Set();
+  let articleCount = 0;
+  let adverseHits = 0;
 
-    const query = `"${companyName}" AND (${keywords.join(" OR ")})`;
-    const params = new URLSearchParams({
-      query,
-      mode: "ArtList",
-      format: "json",
-      maxrecords: "20",
-      sort: "HybridRel"
-    });
+  for (const keyword of keywords) {
+    try {
+      const query = `"${companyName}" AND "${keyword}"`;
+      const params = new URLSearchParams({
+        query,
+        mode: "ArtList",
+        format: "json",
+        maxrecords: "10",
+        sort: "HybridRel"
+      });
 
-    const data = await fetchJson(`${GDELT_DOC_API}?${params.toString()}`);
-    const articles = Array.isArray(data?.articles) ? data.articles : [];
+      const data = await fetchJson(`${GDELT_DOC_API}?${params.toString()}`);
+      const articles = Array.isArray(data?.articles) ? data.articles : [];
 
-    const sources = Array.from(
-      new Set(articles.map((article) => article?.source || article?.domain).filter(Boolean))
-    ).slice(0, 10);
+      articleCount += articles.length;
+      if (articles.length > 0) adverseHits += 1;
 
-    return {
-      articleCount: articles.length,
-      adverseHits: articles.length,
-      sources
-    };
-  } catch {
-    return {
-      articleCount: 0,
-      adverseHits: 0,
-      sources: []
-    };
+      for (const article of articles) {
+        if (article?.source) sources.add(article.source);
+        else if (article?.domain) sources.add(article.domain);
+      }
+    } catch {
+      // Continue processing other keywords.
+    }
   }
+
+  return {
+    articleCount,
+    adverseHits,
+    sources: Array.from(sources)
+  };
 }
 
 async function getPublicKnowledgeGraph(companyName) {
@@ -350,32 +515,111 @@ async function getPublicKnowledgeGraph(companyName) {
   }
 }
 
-async function collectAdditionalIntelligence(companyName, website) {
-  const domain = normalizeDomainCandidate(website);
+async function getCorporateNetwork(corporateRegistry) {
+  const officers = Array.isArray(corporateRegistry?.officers) ? corporateRegistry.officers : [];
+  const directors = officers.filter((entry) => /director/i.test(entry?.position || ""));
 
-  const [domainIntelligence, websiteSecurity, technologyProfile, corporateRegistry, adverseMedia, publicKnowledgeGraph] =
+  const enrichedDirectors = [];
+
+  for (const director of directors) {
+    const directorName = cleanString(director?.name);
+    if (!directorName) continue;
+
+    let otherCompanies = [];
+
+    try {
+      const params = new URLSearchParams({ q: directorName, per_page: "5" });
+      const data = await fetchJson(`${OPENCORPORATES_OFFICERS_SEARCH_API}?${params.toString()}`);
+      const results = Array.isArray(data?.results?.officers) ? data.results.officers : [];
+
+      otherCompanies = uniqueStrings(
+        results
+          .map((row) => row?.officer?.company?.name)
+          .filter((name) => name && name !== corporateRegistry?.companyName)
+      );
+    } catch {
+      otherCompanies = [];
+    }
+
+    enrichedDirectors.push({
+      name: directorName,
+      position: cleanString(director?.position),
+      otherCompanies
+    });
+  }
+
+  return {
+    directors: enrichedDirectors
+  };
+}
+
+function buildOwnership(corporateRegistry) {
+  const officers = Array.isArray(corporateRegistry?.officers) ? corporateRegistry.officers : [];
+  const directors = officers.filter((entry) => /director/i.test(entry?.position || ""));
+
+  return {
+    officers,
+    directors
+  };
+}
+
+function buildAddressVerification(corporateRegistry, websiteAnalysis, searchDiscovery) {
+  const sourceAddresses = [
+    corporateRegistry?.registeredAddress,
+    websiteAnalysis?.address,
+    ...(Array.isArray(websiteAnalysis?.extractedAddresses) ? websiteAnalysis.extractedAddresses : [])
+  ];
+
+  const directoryAddressHints = [];
+  const candidateUrls = [
+    ...(searchDiscovery?.categorizedUrls?.business_directory || []),
+    ...(searchDiscovery?.categorizedUrls?.government_registry || []),
+    ...(searchDiscovery?.categorizedUrls?.registry || [])
+  ];
+
+  for (const url of candidateUrls) {
+    directoryAddressHints.push(...extractAddressCandidates(url));
+  }
+
+  const consolidated = uniqueStrings([...sourceAddresses, ...directoryAddressHints]);
+  return pickMostFrequentAddress(consolidated);
+}
+
+async function collectAdditionalIntelligence(companyName, website) {
+  const [searchDiscovery, corporateRegistry, websiteAnalysis, domainIntelligence, adverseMedia, publicKnowledgeGraph] =
     await Promise.all([
-      getDomainIntelligence(website),
-      getWebsiteSecurity(domain),
-      getTechnologyProfile(domain),
+      getGlobalSearchDiscovery(companyName),
       getCorporateRegistry(companyName),
+      getWebsiteAnalysis(website),
+      getDomainIntelligence(website),
       getAdverseMedia(companyName),
       getPublicKnowledgeGraph(companyName)
     ]);
 
   const corporateNetwork = await getCorporateNetwork(corporateRegistry);
+  const ownership = buildOwnership(corporateRegistry);
+  const addressVerification = buildAddressVerification(corporateRegistry, websiteAnalysis, searchDiscovery);
 
   const intelligence = {
     domainIntelligence,
-    websiteSecurity,
-    technologyProfile,
     corporateRegistry,
-    corporateNetwork,
+    ownership,
+    addressVerification,
+    websiteAnalysis: {
+      websiteExists: websiteAnalysis.websiteExists,
+      httpsEnabled: websiteAnalysis.httpsEnabled,
+      companyDescription: websiteAnalysis.companyDescription,
+      address: websiteAnalysis.address,
+      phone: websiteAnalysis.phone,
+      email: websiteAnalysis.email,
+      pagesChecked: websiteAnalysis.pagesChecked
+    },
     adverseMedia,
-    publicKnowledgeGraph
+    publicKnowledgeGraph,
+    corporateNetwork,
+    sourceDiscovery: searchDiscovery
   };
 
-  // Backward-compatible aliases for existing report consumers.
   intelligence.media = adverseMedia;
   intelligence.domain = domainIntelligence;
   intelligence.knowledge = publicKnowledgeGraph;
@@ -388,10 +632,10 @@ module.exports = {
   extractDomain,
   collectAdditionalIntelligence,
   getDomainIntelligence,
-  getWebsiteSecurity,
-  getTechnologyProfile,
   getCorporateRegistry,
-  getCorporateNetwork,
+  getWebsiteAnalysis,
   getAdverseMedia,
-  getPublicKnowledgeGraph
+  getPublicKnowledgeGraph,
+  getCorporateNetwork,
+  getGlobalSearchDiscovery
 };
