@@ -583,7 +583,34 @@ async function run(){
       "Create a structured forensic due diligence report for "+name+
       ". Country: "+country+
       ". Website: "+website+
-      ". Use sections: Company Overview, Ownership & Management, Address Verification, Offshore Ownership Screening, Media & Reputation, Legal & Regulatory Issues, Sanctions Screening, Risk Conclusion. Use at most 2 citations per sentence, preferring 1 when possible. End with FLAG: GREEN or FLAG: YELLOW or FLAG: RED."
+      ". When the country is specified, prioritize corporate registries and business directories relevant to that country.
+
+Examples:
+Brazil → CNPJ registry (Receita Federal)
+Mexico → Registro Público de Comercio
+India → MCA registry
+United States → State business registries
+European Union → national corporate registries
+United Kingdom → Companies House
+Canada → Corporations Canada registry
+Australia → ASIC company register
+Singapore → ACRA business registry
+Hong Kong → Companies Registry
+Germany → Handelsregister
+France → RCS / INPI
+Netherlands → Kamer van Koophandel (KvK)
+Spain → Registro Mercantil
+Italy → Registro delle Imprese
+
+Use sections exactly as follows:
+Company Overview
+Ownership & Management
+Address Verification
+Offshore Ownership Screening
+Media & Reputation
+Legal & Regulatory Issues
+Sanctions Screening
+Risk Conclusion. Use at most 2 citations per sentence, preferring 1 when possible. End with FLAG: GREEN or FLAG: YELLOW or FLAG: RED."
     })
   });
 
