@@ -201,7 +201,6 @@ export default async function handler(req, res) {
     const sanctionsResult = await getSanctionsScreening(company);
     const offshoreResult = await getOffshoreScreening(company);
     const evidence = await collectEvidence(company, website);
-    const hasEvidence = evidence.length > 0;
     const evidenceBlock = evidence
       .map((e, i) => `[${i + 1}] ${e.url}\n${e.snippet}`)
       .join("\n\n");
@@ -217,9 +216,7 @@ export default async function handler(req, res) {
       "Rules:",
       "",
       "• Only use information from the provided evidence list.",
-      hasEvidence
-        ? "• Every factual claim must cite at least one evidence source."
-        : "• Use your general knowledge and publicly available information to complete the report. Do not fabricate citations.",
+      "• Every factual claim must cite at least one evidence source.",
       "• Never invent companies, entities, or matches.",
       "• Never speculate about sanctions or offshore ownership without evidence.",
       "• If the evidence does not support a claim, write:",
@@ -270,7 +267,7 @@ export default async function handler(req, res) {
       "Analyze the following evidence and produce a forensic due diligence report.",
       "",
       "Evidence sources:",
-      evidenceBlock || "No direct evidence was retrieved via search. Use your general knowledge about this company to complete all sections of the report.",
+      evidenceBlock || "No evidence sources found.",
       "",
       "Keep citation markers [1], [2], etc in the report text as used.",
       "Use a maximum of 2 citations per sentence.",
